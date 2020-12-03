@@ -20,18 +20,25 @@ def hopf(t,z):
 
     return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
 
-a, b = 0, 100
+def get_motor_commands():
+    a, b = 0, 100
 
-t = np.linspace(a, b, 10000)#
+    t = np.linspace(a, b, 10000)#
 
-#solve differential equation 
-sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
+    #solve differential equation 
+    sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
 
-plt.figure()
-plt.plot(sol.y[0], sol.y[1])
-plt.title("Limit Cycle")
+    return sol,t
 
-fig, axs = plt.subplots(2)
-axs[0].plot(t, sol.y[0])
-axs[1].plot(t, sol.y[1])
-plt.show()
+
+
+if __name__ == '__main__':
+    sol,t = get_motor_commands()
+    plt.figure()
+    plt.plot(sol.y[0], sol.y[1])
+    plt.title("Limit Cycle")
+
+    fig, axs = plt.subplots(2)
+    axs[0].plot(t, 512*sol.y[0] + 2048)
+    axs[1].plot(t, sol.y[1])
+    plt.show()
