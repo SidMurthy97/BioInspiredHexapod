@@ -22,48 +22,61 @@ def hopf(t,z):
     #returns [x,y]
     return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
 
+def angle_to_position(angles):
+    conversion_factor = 11.4 # 11.4 units for each degree 
+    offset = 2048
+    
+    positions = angles*conversion_factor + offset
+
+    return positions
+
 def get_motor_commands():
     a, b = 0, 30
 
-    t = np.linspace(a, b, 2000)#
+    t = np.linspace(a, b, 1000)#
 
     #solve differential equation 
     sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
 
     #transofrm the result into angles
     
-    hip = 512*sol.y[1] + 2048
+    hip = 45*sol.y[1] #amplitude is 45 degrees
     knee = []
+
     for i,val in enumerate(sol.y[1]):
-        #print(i)
-        if i < 1999:
+        print(i)
+        if i < len(sol.y[0]) -2:
             if val < sol.y[1][i+1]:
-                knee.append(314*sol.y[0][i] + 2048)
+                knee.append(-30*sol.y[0][i]) #amplitude is 30 degrees
             else:
-                knee.append(2048)
+                knee.append(0)
         else:
             knee.append(knee[-1])
 
-    return hip,knee,t,sol
+    knee = np.array(knee)
+    return hip,knee,t
 
 
 
 if __name__ == '__main__':
-    hip,knee,t,sol = get_motor_commands()
-
+    hip,knee,t = get_motor_commands()
     # fig, axs = plt.subplots(2)
     # axs[0].plot(t, hip)
     # axs[1].plot(t, knee)
-    
     plt.figure()
-    plt.plot(t,hip,"b",label= "Hip position")
-    plt.plot(t,knee,"-r", label = "Knee position")
+    plt.plot(t,angle_to_position(hip),"b",label= "Hip position")
+    plt.plot(t,angle_to_position(knee),"-r", label = "Knee position")
     plt.xlabel("time")
     plt.ylabel("position")
     plt.legend()
 
+    plt.figure()
+    plt.plot(t,hip,"b",label= "Hip position")
+    plt.plot(t,knee,"-r", label = "Knee position")
+    plt.title("Angle profile with time")
+    plt.xlabel("time")
+    plt.ylabel("Angles")
+    plt.legend()
 
-    # fig2, axs2 = plt.subplots(2)
-    # axs2[0].plot(t, sol.y[0])
-    # axs2[1].plot(t, sol.y[1])
+
     plt.show()
