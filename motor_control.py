@@ -93,40 +93,39 @@ else:
 
 # Enable Dynamixel Torque on both motors
 dxl_comm_result1, dxl_error1 = packetHandler.write1ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
-#dxl_comm_result2, dxl_error2 = packetHandler.write1ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_TORQUE_ENABLE, not TORQUE_ENABLE)
+dxl_comm_result2, dxl_error2 = packetHandler.write1ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
 
 check_connection(dxl_comm_result1,dxl_error1)
 #check_connection(dxl_comm_result2,dxl_error2)
 
-sol,t = get_motor_commands()
-for i in sol.y[0]:
+hip, knee,t, sol = get_motor_commands()
+for i in range(len(hip)):
     # print("Press any key to continue! (or press ESC to quit!)")
     if msvcrt.kbhit():
         if msvcrt.getch().lower() == b'q':
             break
 
     #sleep to  register command 
-    i = int(512*i + 2048)
-    print(i)
+    print(hip[i], knee[i])
     #time.sleep(0.01)
     # Write goal position to both motors 
-    dxl_comm_result1, dxl_error1 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_GOAL_POSITION,i)
-#    dxl_comm_result2, dxl_error2 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_GOAL_POSITION, dxl_goal_position[index])
+    dxl_comm_result1, dxl_error1 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_GOAL_POSITION, int(hip[i]))
+    dxl_comm_result2, dxl_error2 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_GOAL_POSITION, int(knee[i]))
     
     check_communication(dxl_comm_result1,dxl_error1)
-#    check_communication(dxl_comm_result2,dxl_error2)
+    check_communication(dxl_comm_result2,dxl_error2)
 
     while 1:
         # Read present position
         dxl_present_position1, dxl_comm_result1, dxl_error1 = packetHandler.read4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_PRESENT_POSITION)
-#        dxl_present_position2, dxl_comm_result2, dxl_error2 = packetHandler.read4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_PRESENT_POSITION)
+        dxl_present_position2, dxl_comm_result2, dxl_error2 = packetHandler.read4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_PRESENT_POSITION)
         check_communication(dxl_comm_result1,dxl_error1)
         
         #print("[ID:%03d] GoalPos:%03d  PresPos:%03d" % (DXL_ID[0], dxl_goal_position[index], dxl_present_position1))
 #        print("[ID:%03d] GoalPos:%03d  PresPos:%03d" % (DXL_ID[1], dxl_goal_position[index], dxl_present_position2))
 
         #once error is less than threshold 
-        if abs(i - dxl_present_position1) < DXL_MOVING_STATUS_THRESHOLD: # and abs(dxl_goal_position[index] - dxl_present_position2) < DXL_MOVING_STATUS_THRESHOLD:
+        if abs(hip[i] - dxl_present_position1) < DXL_MOVING_STATUS_THRESHOLD and abs(knee[i] - dxl_present_position2) < DXL_MOVING_STATUS_THRESHOLD:
             break
 
     # Change goal position
@@ -143,10 +142,10 @@ if dxl_comm_result != COMM_SUCCESS:
 elif dxl_error != 0:
     print("%s" % packetHandler.getRxPacketError(dxl_error))
 
-# dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
-# if dxl_comm_result != COMM_SUCCESS:
-#     print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-# elif dxl_error != 0:
-    # print("%s" % packetHandler.getRxPacketError(dxl_error))
+dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
+if dxl_comm_result != COMM_SUCCESS:
+    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
+elif dxl_error != 0:
+    print("%s" % packetHandler.getRxPacketError(dxl_error))
 # Close port
 portHandler.closePort()
