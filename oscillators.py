@@ -23,7 +23,7 @@ def hopf(t,z):
     return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
 
 def get_motor_commands():
-    a, b = 0, 100
+    a, b = 0, 30
 
     t = np.linspace(a, b, 2000)#
 
@@ -55,10 +55,15 @@ if __name__ == '__main__':
     # axs[0].plot(t, hip)
     # axs[1].plot(t, knee)
     
-    fig, axs = plt.subplots(1)
-    axs.plot(t, hip)
-    axs.plot(t, knee, 'r')
-    fig2, axs2 = plt.subplots(2)
-    axs2[0].plot(t, sol.y[0])
-    axs2[1].plot(t, sol.y[1])
+    plt.figure()
+    plt.plot(t,hip,"b",label= "Hip position")
+    plt.plot(t,knee,"-r", label = "Knee position")
+    plt.xlabel("time")
+    plt.ylabel("position")
+    plt.legend()
+
+
+    # fig2, axs2 = plt.subplots(2)
+    # axs2[0].plot(t, sol.y[0])
+    # axs2[1].plot(t, sol.y[1])
     plt.show()
