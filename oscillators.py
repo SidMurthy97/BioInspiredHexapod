@@ -44,10 +44,10 @@ def get_motor_commands():
     knee = []
 
     for i,val in enumerate(sol.y[1]):
-        print(i)
+        #print(i)
         if i < len(sol.y[0]) -2:
             if val < sol.y[1][i+1]:
-                knee.append(-30*sol.y[0][i]) #amplitude is 30 degrees
+                knee.append(30*sol.y[0][i]) #amplitude is 30 degrees
             else:
                 knee.append(0)
         else:
