@@ -10,10 +10,10 @@ def vdp(t, z):
     scaling2 = 1
     omega_sq2 = 1
     
-    x1, y1,x2,y2 = z
+    x1, y1 = z
 
     #return is then the new conditions 
-    return [y1, epsilon*(1- scaling1*(x1**2))*y1 - omega_sq1*x1, y2,epsilon*(1- scaling2*(x2**2))*y2 - omega_sq2*x2 + 0.3*x1*y1]
+    return [y1, epsilon*(1- scaling1*(x1**2))*y1 - omega_sq1*x1]
 
 def hopf(t,z):
     a,mu,omega = 1,1,1
@@ -36,6 +36,7 @@ def get_motor_commands():
     t = np.linspace(a, b, 1000)#
 
     #solve differential equation 
+    #sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
     sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
 
     #transofrm the result into angles
@@ -54,29 +55,85 @@ def get_motor_commands():
             knee.append(knee[-1])
 
     knee = np.array(knee)
-    return hip,knee,t
+    return hip,knee,t,sol
+    
+
+def get_vector_portrait():
+    l = 2.0
+
+    # no. of points along x/y axis
+    n = 101
+
+    # X and Y dimensions
+    x1 = np.linspace(-l, l, n)
+    x2 = np.linspace(-l, l, n)
+
+    X1, X2 = np.meshgrid(x1, x2) #there are the points at which the vector is evaluated
+
+    U, V = hopf(0,[X1, X2])
+
+    # Resultant velocity
+    vels = np.hypot(U, V)
+
+    # Slice interval for quiver
+    slice_interval = 6
+
+    # Slicer index for smoother quiver plot
+    # General note: Adjust the slice interval and scale accordingly to get the required arrow size.
+    # Also, the units, and angles units are also responsible.
+    skip = (slice(None, None, slice_interval), slice(None, None, slice_interval))
+
+    return X1[skip],X2[skip], U[skip],V[skip], vels[skip]
 
 
 
 if __name__ == '__main__':
-    hip,knee,t = get_motor_commands()
-    # fig, axs = plt.subplots(2)
-    # axs[0].plot(t, hip)
-    # axs[1].plot(t, knee)
+    hip,knee,t,sol = get_motor_commands()
+    vector_x,vector_y,U,V,velocity = get_vector_portrait()
+
+    # plt.figure()
+    # plt.plot(sol.y[0],sol.y[1])
+    # plt.title("Limit Cycle of VDP oscillator")
+    # plt.xlabel("x")
+    # plt.ylabel("y")
+
     plt.figure()
-    plt.plot(t,angle_to_position(hip),"b",label= "Hip position")
-    plt.plot(t,angle_to_position(knee),"-r", label = "Knee position")
+    plt.plot(t,sol.y[1],"b",label= "y")
+    plt.plot(t,sol.y[0],"-r", label = "x")
     plt.xlabel("time")
     plt.ylabel("position")
+    plt.title("Hopf oscillator outputs")
     plt.legend()
+
 
     plt.figure()
-    plt.plot(t,hip,"b",label= "Hip position")
-    plt.plot(t,knee,"-r", label = "Knee position")
-    plt.title("Angle profile with time")
-    plt.xlabel("time")
-    plt.ylabel("Angles")
-    plt.legend()
+    plt.plot(sol.y[0],sol.y[1])
+    Quiver = plt.quiver(vector_x,vector_y,
+                        U, V,
+                        velocity,
+                        units='height',
+                        angles='uv',
+                        scale=50,
+                        pivot='mid',
+                        # color='blue',
+                        cmap=plt.cm.seismic
+                        )
+    plt.title("Hopf Oscillator Vector Portrait")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.colorbar(Quiver)
+    plt.xticks()
+    plt.yticks()
+    #plt.axis([-l, l, -l, l])
+    plt.grid()
 
+
+    # plt.figure()
+    # plt.plot(t,angle_to_position(hip),"b",label= "Hip position")
+    # plt.plot(t,angle_to_position(knee),"-r", label = "Knee position")
+    # plt.xlabel("time")
+    # plt.ylabel("position")
+    # plt.title("Angle profile with time")
+    # plt.legend()
 
     plt.show()
