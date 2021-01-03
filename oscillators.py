@@ -5,18 +5,16 @@ import matplotlib.pyplot as plt
 #Model for the VDp oscillator, z is the initial conditino to begin with and then the outputs of the solver 
 def vdp(t, z):
     epsilon = 0.1
-    omega_sq1 = 1
-    scaling1 = 1
-    scaling2 = 1
-    omega_sq2 = 1
+    omega = 1
+    b = 2
     
     x1, y1 = z
 
     #return is then the new conditions 
-    return [y1, epsilon*(1- scaling1*(x1**2))*y1 - omega_sq1*x1]
+    return [y1, epsilon*(1- b*(x1**2))*y1 - omega*x1]
 
 def hopf(t,z):
-    a,mu,omega = 1,1,1
+    a,mu,omega = 1,2,1
     x,y = z
 
     #returns [x,y]
@@ -33,11 +31,11 @@ def angle_to_position(angles):
 def get_motor_commands():
     a, b = 0, 30
 
-    t = np.linspace(a, b, 1000)#
+    t = np.linspace(a, b, 1000)
 
     #solve differential equation 
     #sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
-    sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
+    sol = solve_ivp(vdp, [a, b], [1, 0], t_eval=t)
 
     #transofrm the result into angles
     
@@ -70,7 +68,7 @@ def get_vector_portrait():
 
     X1, X2 = np.meshgrid(x1, x2) #there are the points at which the vector is evaluated
 
-    U, V = hopf(0,[X1, X2])
+    U, V = vdp(0,[X1, X2])
 
     # Resultant velocity
     vels = np.hypot(U, V)
@@ -102,12 +100,12 @@ if __name__ == '__main__':
     plt.plot(t,sol.y[0],"-r", label = "x")
     plt.xlabel("time")
     plt.ylabel("position")
-    plt.title("Hopf oscillator outputs")
+    plt.title("Hopf oscillator outputs with b = 1, $\omega$ = 1")
     plt.legend()
 
 
     plt.figure()
-    plt.plot(sol.y[0],sol.y[1])
+    plt.plot(sol.y[0],sol.y[1],'-r')
     Quiver = plt.quiver(vector_x,vector_y,
                         U, V,
                         velocity,
@@ -118,7 +116,7 @@ if __name__ == '__main__':
                         # color='blue',
                         cmap=plt.cm.seismic
                         )
-    plt.title("Hopf Oscillator Vector Portrait")
+    plt.title("Hopf Oscillator Vector Portrait with $\epsilon = 0.1$")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.colorbar(Quiver)

@@ -1,8 +1,12 @@
 import os
 import msvcrt
-from dynamixel_sdk import *                    # Uses Dynamixel SDK library
-from oscillators import get_motor_commands, angle_to_position
+from dynamixel_sdk import *  
+from RT_CPG_units import get_motor_commands                  # Uses Dynamixel SDK library
 import time 
+import matplotlib.pyplot as plt
+
+
+
 def check_connection(dxl_comm_result,dxl_error):
     
     if dxl_comm_result != COMM_SUCCESS:
@@ -98,20 +102,20 @@ dxl_comm_result2, dxl_error2 = packetHandler.write1ByteTxRx(portHandler, DXL_ID[
 check_connection(dxl_comm_result1,dxl_error1)
 #check_connection(dxl_comm_result2,dxl_error2)
 
-hip, knee, t = get_motor_commands()
-hip_pos, knee_pos = angle_to_position(hip), angle_to_position(knee)
-for i in range(len(hip)):
+start = time.time()
+
+hip_command, knee_command, t = [],[],[]
+while time.time() - start < 10:
     # print("Press any key to continue! (or press ESC to quit!)")
     if msvcrt.kbhit():
         if msvcrt.getch().lower() == b'q':
             break
 
-    #sleep to  register command 
-    print(hip[i], knee[i])
-    #time.sleep(0.01)
+    #use oscillator to get position
+    hip_pos,knee_pos = get_motor_commands(start)
     # Write goal position to both motors 
-    dxl_comm_result1, dxl_error1 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_GOAL_POSITION, int(hip_pos[i]))
-    dxl_comm_result2, dxl_error2 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_GOAL_POSITION, int(knee_pos[i]))
+    dxl_comm_result1, dxl_error1 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_GOAL_POSITION, int(hip_pos))
+    dxl_comm_result2, dxl_error2 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_GOAL_POSITION, int(knee_pos))
     
     check_communication(dxl_comm_result1,dxl_error1)
     check_communication(dxl_comm_result2,dxl_error2)
@@ -122,11 +126,14 @@ for i in range(len(hip)):
         dxl_present_position2, dxl_comm_result2, dxl_error2 = packetHandler.read4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_PRESENT_POSITION)
         check_communication(dxl_comm_result1,dxl_error1)
         
+        hip_command.append(dxl_present_position1)
+        knee_command.append(dxl_present_position2)
+        t.append(time.time() - start)
         #print("[ID:%03d] GoalPos:%03d  PresPos:%03d" % (DXL_ID[0], dxl_goal_position[index], dxl_present_position1))
 #        print("[ID:%03d] GoalPos:%03d  PresPos:%03d" % (DXL_ID[1], dxl_goal_position[index], dxl_present_position2))
 
         #once error is less than threshold 
-        if abs(hip_pos[i] - dxl_present_position1) < DXL_MOVING_STATUS_THRESHOLD and abs(knee_pos[i] - dxl_present_position2) < DXL_MOVING_STATUS_THRESHOLD:
+        if abs(hip_pos - dxl_present_position1) < DXL_MOVING_STATUS_THRESHOLD and abs(knee_pos - dxl_present_position2) < DXL_MOVING_STATUS_THRESHOLD:
             break
 
     # Change goal position
@@ -134,6 +141,9 @@ for i in range(len(hip)):
         index = 1
     else:
             index = 0
+
+
+
 
 
 # Disable Dynamixel Torque
@@ -150,3 +160,8 @@ elif dxl_error != 0:
     print("%s" % packetHandler.getRxPacketError(dxl_error))
 # Close port
 portHandler.closePort()
+
+plt.figure()
+plt.plot(t,hip_command,"-b")
+plt.plot(t,knee_command,"-r")
+plt.show()
