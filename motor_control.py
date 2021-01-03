@@ -162,6 +162,10 @@ elif dxl_error != 0:
 portHandler.closePort()
 
 plt.figure()
-plt.plot(t,hip_command,"-b")
-plt.plot(t,knee_command,"-r")
+plt.plot(t,hip_command,"b", label = "Hip")
+plt.plot(t,knee_command,"r", label = "Knee")
+plt.xlabel("Time/s")
+plt.ylabel("Motor Position")
+plt.title("Actual Motor Positions over a 10 second period")
+plt.legend()
 plt.show()

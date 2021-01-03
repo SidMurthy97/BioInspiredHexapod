@@ -36,7 +36,7 @@ def get_motor_commands(start):
 if __name__ == "__main__":
     initial_conditions = [0,0]
     x,y = initial_conditions
-    xr,yr = [],[]
+    xr,yr,t = [],[], []
     start = time.time()
     
     while time.time() - start < 10:
@@ -45,15 +45,16 @@ if __name__ == "__main__":
         hip = 45*y
         knee = 30*x if x > 0 else 0 
 
-        xr.append(angle_to_position(hip))
-        yr.append(angle_to_position(knee))
-
-
-    plt.figure()
-    plt.plot(xr,yr)
+        xr.append((hip))
+        yr.append((knee))
+        t.append(time.time() - start)
 
     plt.figure()
-    plt.plot(xr)
-    plt.plot(yr)
+    plt.plot(t,xr,"b", label = "Hip")
+    plt.plot(t,yr,"r", label = "Knee")
+    plt.xlabel("Time/s")
+    plt.ylabel("Angles")
+    plt.title("Expected Angle Profile")
+    plt.legend()
     plt.show()
     
