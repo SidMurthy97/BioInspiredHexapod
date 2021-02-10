@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
-
+import math
 #Model for the VDp oscillator, z is the initial conditino to begin with and then the outputs of the solver 
 def vdp(t, z):
     epsilon = 0.1
@@ -14,7 +14,7 @@ def vdp(t, z):
     return [y1, epsilon*(1- b*(x1**2))*y1 - omega*x1]
 
 def hopf(t,z):
-    a,mu,omega = 1,2,1
+    a,mu,omega = 1,1,math.pi
     x,y = z
 
     #returns [x,y]
@@ -29,7 +29,7 @@ def angle_to_position(angles):
     return positions
 
 def get_motor_commands():
-    a, b = 0, 30
+    a, b = 0, 10
 
     t = np.linspace(a, b, 1000)
 
