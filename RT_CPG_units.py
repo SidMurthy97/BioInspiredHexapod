@@ -22,14 +22,16 @@ def vdp(t,z):
 
     return x,y
 
-def get_motor_commands(start):
+def get_motor_commands(start,realWorld = False):
         
     x,y = hopf(time.time() - start)
-    hip = 45*y
-    knee = 30*x if x > 0 else 0 
+    hip = math.pi /4 *y
+    knee = math.pi/6*x if x > 0 else 0 
 
-    return angle_to_position(hip),angle_to_position(knee)
-
+    if realWorld:
+        return angle_to_position(hip),angle_to_position(knee)
+    else:
+        return hip,knee
 
 
 
@@ -41,9 +43,7 @@ if __name__ == "__main__":
     
     while time.time() - start < 10:
         
-        x,y = hopf(time.time() - start)
-        hip = 45*y
-        knee = 30*x if x > 0 else 0 
+        hip,knee = get_motor_commands(start)
 
         xr.append((hip))
         yr.append((knee))
