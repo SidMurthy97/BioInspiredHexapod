@@ -3,7 +3,7 @@ import time
 import pybullet_data
 from pprint import pprint  
 import math 
-
+from RT_CPG_units import get_motor_commands
 
 def printJointInfo():
     for i in range(nJoints):
@@ -25,19 +25,21 @@ states = [0,math.pi/4]
 
 tol = 0.05 #set tolerance 
 
-hips = [0,3,6,9,12,15]
-shoulder = [1,4,7,10,13,16]
-
+shoulder = [10,13,4]
+hips = [9,12,3]
+start = time.time()
 for i in range (1000):
-    index = i%len(states)
-    pos = states[index]
-    print("targert: ",pos)
-    p.setJointMotorControlArray(hexapod,shoulder,p.POSITION_CONTROL,[pos]*len(shoulder))
+    hipPos,shoulderPos = get_motor_commands(start)
+
+    print("target: ",shoulderPos, hipPos)
+    
+    p.setJointMotorControlArray(hexapod,shoulder,p.POSITION_CONTROL,[shoulderPos]*len(shoulder))
+    p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,[hipPos]*len(hips))
     
     while 1:
-        current_pos = p.getJointState(hexapod,1)[0]
+        current_pos = p.getJointState(hexapod,10)[0]
         print(current_pos)
-        if abs(current_pos - pos) < tol:
+        if abs(current_pos - shoulderPos) < tol:
             break
     
         
