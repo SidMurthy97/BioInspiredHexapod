@@ -48,11 +48,9 @@ for i in range (1000):
     
     while 1:
         current_pos = p.getJointState(hexapod,10)[0]
-        #print(current_pos)
         if abs(current_pos - shoulderPos) < tol:
             break
-    #print(p.getBasePositionAndOrientation(hexapod)[0])
-    p.resetDebugVisualizerCamera(5,230,200,p.getBasePositionAndOrientation(hexapod)[0])
+    p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
     time.sleep(1./240.)
     
 p.disconnect()
