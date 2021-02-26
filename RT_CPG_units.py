@@ -12,13 +12,14 @@ class CPG():
         self.hopfMu = 1
         self.hopfOmega = math.pi
         self.torqueFeedback = 0
+        self.attenuation = 1/50
+        self.offset = 0
 
     def hopf(self,t):
         mu,omega = self.hopfMu,self.hopfOmega
         
-        offset = self.torqueFeedback
-
-        x = math.sqrt(mu)*np.cos(omega*t) + offset
+        self.offset = self.offset + (1/5000)*(self.torqueFeedback + self.offset)
+        x = math.sqrt(mu)*np.cos(omega*t) + self.offset
         y = math.sqrt(mu)*np.sin(omega*t)
         
         t = t-1
