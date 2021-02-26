@@ -45,11 +45,17 @@ class CPG():
             
         x,y,xd,yd = self.hopf(time.time() - start)
         
-        hip = math.pi /6 *y
-        knee = math.pi/6*x if x > 0 else 0 
+        # hip = math.pi /6 *y
+        # knee = math.pi/6*x if x > 0 else 0 
 
-        hipd = math.pi /6 *yd
-        kneed = math.pi/6*xd if xd > 0 else 0 
+        # hipd = math.pi /6 *yd
+        # kneed = math.pi/6*xd if xd > 0 else 0 
+        
+        hip = 30 *y
+        knee = 30*x if x > 0 else 0 
+
+        hipd = 30 *yd
+        kneed = 30*xd if xd > 0 else 0 
 
         if realWorld:
             return angle_to_position(hip),angle_to_position(knee)
