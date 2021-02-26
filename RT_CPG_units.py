@@ -5,45 +5,55 @@ import time
 from oscillators import angle_to_position
 
 
-def hopf(t):
-    a,mu,omega = 1,1,math.pi
-    
-    x = math.sqrt(mu)*np.cos(omega*t)
-    y = math.sqrt(mu)*np.sin(omega*t)
-    
-    
-    t = t-1
-    
-    xd = math.sqrt(mu)*np.cos(omega*t)
-    yd = math.sqrt(mu)*np.sin(omega*t)
-    
-  
-    return x,y,xd,yd
 
+class CPG():
 
-def vdp(t,z):
-    b,w = 1,math.pi
-    x,y = z
+    def __init__(self):
+        self.hopfMu = 1
+        self.hopfOmega = math.pi
+        self.torqueFeedback = 0
 
-    x = (2/math.sqrt(b))*np.cos(w*t) 
-    y = ((2*w)/math.sqrt(b))*np.sin(w*t) 
-
-    return x,y
-
-def get_motor_commands(start,realWorld = False):
+    def hopf(self,t):
+        mu,omega = self.hopfMu,self.hopfOmega
         
-    x,y,xd,yd = hopf(time.time() - start)
+        offset = self.torqueFeedback
+
+        x = math.sqrt(mu)*np.cos(omega*t) + offset
+        y = math.sqrt(mu)*np.sin(omega*t)
+        
+        t = t-1
+        
+        #phase shifted values 
+        xd = math.sqrt(mu)*np.cos(omega*t)
+        yd = math.sqrt(mu)*np.sin(omega*t)
+        
     
-    hip = math.pi /6 *y
-    knee = math.pi/6*x if x > 0 else 0 
+        return x,y,xd,yd
 
-    hipd = math.pi /6 *yd
-    kneed = math.pi/6*xd if xd > 0 else 0 
 
-    if realWorld:
-        return angle_to_position(hip),angle_to_position(knee)
-    else:
-        return hip,knee,hipd,kneed
+    def vdp(self,t,z):
+        b,w = 1,math.pi
+        x,y = z
+
+        x = (2/math.sqrt(b))*np.cos(w*t) 
+        y = ((2*w)/math.sqrt(b))*np.sin(w*t) 
+
+        return x,y
+
+    def get_motor_commands(self,start,realWorld = False):
+            
+        x,y,xd,yd = self.hopf(time.time() - start)
+        
+        hip = math.pi /6 *y
+        knee = math.pi/6*x if x > 0 else 0 
+
+        hipd = math.pi /6 *yd
+        kneed = math.pi/6*xd if xd > 0 else 0 
+
+        if realWorld:
+            return angle_to_position(hip),angle_to_position(knee)
+        else:
+            return hip,knee,hipd,kneed
 
 
 
@@ -52,10 +62,12 @@ if __name__ == "__main__":
     x,y = initial_conditions
     xr,yr,t = [],[], []
     start = time.time()
-    
+    cpg = CPG()
+
     while time.time() - start < 10:
         
-        hip,knee = get_motor_commands(start)
+        hip,knee = cpg.get_motor_commands(start,True)
+        #hip,knee,_,_ = cpg.hopf(time.time() - start)
 
         xr.append((hip))
         yr.append((knee))

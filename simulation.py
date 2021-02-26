@@ -36,6 +36,7 @@ hipbuffer= []
 shoulderbuffer= []
 
 start = time.time()
+# p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
 for i in range (1000):
     
     hipPos,shoulderPos,hipdPos,shoulderdPos = get_motor_commands(start)
