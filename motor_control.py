@@ -125,10 +125,23 @@ while time.time() - start < 20:
 
     #use oscillator to get position
     hip_pos,knee_pos = cpg.get_motor_commands(start,realWorld=True)
-    # Write goal position to both motors 
-    dxl_comm_result1, dxl_error1 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_GOAL_POSITION, int(hip_pos))
-    dxl_comm_result2, dxl_error2 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_GOAL_POSITION, int(knee_pos))
+
+    #If obstacle not detected, write next position 
+    if not cpg.elevator: 
+        # Write goal position to both motors 
+        dxl_comm_result1, dxl_error1 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_GOAL_POSITION, int(hip_pos))
+        dxl_comm_result2, dxl_error2 = packetHandler.write4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_GOAL_POSITION, int(knee_pos))
+
+    else:
+        cpg.criticalHipPos,_,_ = packetHandler.read4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_PRESENT_POSITION)
     
+        if hip_pos < cpg.criticalHipPos and hip_pos > cpg.criticalHipPos - 500:
+            cpg.elevator = False
+            cpg.release = True
+            
+
+
+
     check_communication(dxl_comm_result1,dxl_error1)
     check_communication(dxl_comm_result2,dxl_error2)
 

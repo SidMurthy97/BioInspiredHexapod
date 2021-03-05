@@ -12,25 +12,37 @@ class CPG():
         self.hopfMu = 1
         self.hopfOmega = math.pi
         self.torqueFeedback = 0
-        self.attenuation = 1/30
-        self.offset = 0.2
+        self.attenuation = 1/20
+        self.offset = 0
         self.n = 0
         self.k = 60
-        self.reverseTime = 0
+        self.elevator = False
+        self.criticalHipPos = 0
+        self.release = False
+    
+    
     def hopf(self,t):
         
+        #keep count of the number of times this function has been called to make online averaging accurate
+        #averages only the last k values
         if self.n < self.k:
             self.n+=1
         else:
             self.n = self.k
-
+        
         mu,omega = self.hopfMu,self.hopfOmega
 
         #Online averaging to make the effect of large torque last longer.
         self.offset = self.offset + (self.torqueFeedback * self.attenuation - self.offset)/self.n
+        #  
+        #add offset only to knee
         x = math.sqrt(mu)*np.cos(omega*t) + self.offset
         y = math.sqrt(mu)*np.sin(omega*t)
         
+        if self.torqueFeedback > 50 and t > 1 and self.release == False:
+            self.elevator = True
+        else:
+            self.release = False
 
         #phase shifted values 
         xd = math.sqrt(mu)*np.cos(omega*t)
