@@ -63,7 +63,7 @@ PROTOCOL_VERSION            = 2.0               #Using protocol 2
 # Default setting
 DXL_ID                      = [1,2]               # 1 is hip, 2 is knee 
 BAUDRATE                    = 57600             # Dynamixel default baudrate : 57600
-DEVICENAME                  = 'COM5'    #should make this an input really 
+DEVICENAME                  = 'COM3'    #should make this an input really 
                                                 
 #define some constants                                                 
 TORQUE_ENABLE               = 1                 # Value for enabling the torque
@@ -114,10 +114,10 @@ check_connection(dxl_comm_result1,dxl_error1)
 
 start = time.time()
 
-hip_command, knee_command, t,currentList = [],[],[],[]
+hip_command, knee_command, t,currentList,offset = [],[],[],[],[]
 cpg = CPG()
 
-while time.time() - start < 10:
+while time.time() - start < 20:
     # print("Press any key to continue! (or press ESC to quit!)")
     if msvcrt.kbhit():
         if msvcrt.getch().lower() == b'q':
@@ -141,8 +141,11 @@ while time.time() - start < 10:
         check_communication(dxl_comm_result1,dxl_error1)
         currentRaw,_,_ = packetHandler.read2ByteTxRx(portHandler, DXL_ID[0], ADDR_CURRENT)
         current = convert2sComplement(currentRaw,bytesize=2)
+        cpg.torqueFeedback = current
+        
+        offset.append(cpg.offset)
         currentList.append(current) 
-        print(current)
+        #print(current)
         hip_command.append(dxl_present_position1)
         knee_command.append(dxl_present_position2)
         t.append(time.time() - start)
@@ -150,8 +153,8 @@ while time.time() - start < 10:
 #        print("[ID:%03d] GoalPos:%03d  PresPos:%03d" % (DXL_ID[1], dxl_goal_position[index], dxl_present_position2))
 
         #once error is less than threshold 
-        if abs(hip_pos - dxl_present_position1) < DXL_MOVING_STATUS_THRESHOLD and abs(knee_pos - dxl_present_position2) < DXL_MOVING_STATUS_THRESHOLD:
-            break
+        #if abs(hip_pos - dxl_present_position1) < DXL_MOVING_STATUS_THRESHOLD and abs(knee_pos - dxl_present_position2) < DXL_MOVING_STATUS_THRESHOLD:
+        break
 
 # Disable Dynamixel Torque
 dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_TORQUE_ENABLE, TORQUE_DISABLE)
@@ -182,4 +185,10 @@ plt.plot(t,currentList)
 plt.xlabel("Time/s")
 plt.ylabel("Current/2.69mA")
 
+plt.figure()
+plt.plot(t,offset)
+plt.xlabel("Time/s")
+plt.ylabel("Offset")
+
+print(len(t))
 plt.show()

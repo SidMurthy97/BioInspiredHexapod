@@ -21,6 +21,7 @@ def hopf(t,z):
     return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
 
 def angle_to_position(angles):
+    
     conversion_factor = 11.4 # 11.4 units for each degree 
     offset = 2048
     

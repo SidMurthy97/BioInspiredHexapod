@@ -12,18 +12,26 @@ class CPG():
         self.hopfMu = 1
         self.hopfOmega = math.pi
         self.torqueFeedback = 0
-        self.attenuation = 1/50
-        self.offset = 0
-
+        self.attenuation = 1/30
+        self.offset = 0.2
+        self.n = 0
+        self.k = 60
+        self.reverseTime = 0
     def hopf(self,t):
-        mu,omega = self.hopfMu,self.hopfOmega
         
-        self.offset = self.offset + (1/5000)*(self.torqueFeedback + self.offset)
+        if self.n < self.k:
+            self.n+=1
+        else:
+            self.n = self.k
+
+        mu,omega = self.hopfMu,self.hopfOmega
+
+        #Online averaging to make the effect of large torque last longer.
+        self.offset = self.offset + (self.torqueFeedback * self.attenuation - self.offset)/self.n
         x = math.sqrt(mu)*np.cos(omega*t) + self.offset
         y = math.sqrt(mu)*np.sin(omega*t)
         
-        t = t-1
-        
+
         #phase shifted values 
         xd = math.sqrt(mu)*np.cos(omega*t)
         yd = math.sqrt(mu)*np.sin(omega*t)
@@ -58,6 +66,7 @@ class CPG():
         kneed = 30*xd if xd > 0 else 0 
 
         if realWorld:
+            #print(hip,knee)
             return angle_to_position(hip),angle_to_position(knee)
         else:
             return hip,knee,hipd,kneed
@@ -74,7 +83,7 @@ if __name__ == "__main__":
     while time.time() - start < 10:
         
         hip,knee = cpg.get_motor_commands(start,True)
-        #hip,knee,_,_ = cpg.hopf(time.time() - start)
+        #knee,hip,_,_ = cpg.hopf(time.time() - start)
 
         xr.append((hip))
         yr.append((knee))
