@@ -3,14 +3,14 @@ import time
 import pybullet_data
 from pprint import pprint  
 import math 
-from RT_CPG_units import get_motor_commands
+from RT_CPG_units import CPG
 import matplotlib.pyplot as plt
 
 def printJointInfo():
     for i in range(nJoints):
         print(p.getJointInfo(hexapod,i)[0:2])
 
-
+cpg = CPG()
 #set pybullet terms 
 physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
 p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
@@ -18,7 +18,7 @@ p.setGravity(0,0,-10)
 planeId = p.loadURDF("plane.urdf") #load plane
 startPos = [0,0,1]
 startOrientation = p.getQuaternionFromEuler([0,0,0])
-hexapod = p.loadURDF("C:\\Users\\user\\Documents\\year 5\\FYP\\robot_dart\\robots\\pexod.urdf",startPos, startOrientation,globalScaling=3) #load robot and make it bigger
+hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\pexod.urdf",startPos, startOrientation,globalScaling=3) #load robot and make it bigger
 p.setRealTimeSimulation(1) #use system clock to step simulaton
 
 nJoints = p.getNumJoints(hexapod)
@@ -39,7 +39,7 @@ start = time.time()
 # p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
 for i in range (1000):
     
-    hipPos,shoulderPos,hipdPos,shoulderdPos = get_motor_commands(start)
+    hipPos,shoulderPos,hipdPos,shoulderdPos = cpg.get_motor_commands(start)
     
     p.setJointMotorControlArray(hexapod,shoulder1,p.POSITION_CONTROL,[shoulderPos]*len(shoulder1))
     p.setJointMotorControlArray(hexapod,hips1,p.POSITION_CONTROL,[-hipPos,hipPos,-hipPos])

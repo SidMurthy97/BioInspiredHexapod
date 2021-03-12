@@ -134,13 +134,14 @@ while time.time() - start < 20:
 
     else:
         cpg.criticalHipPos,_,_ = packetHandler.read4ByteTxRx(portHandler, DXL_ID[0], ADDR_PRO_PRESENT_POSITION)
+        cpg.criticalKneePos,_,_ = packetHandler.read4ByteTxRx(portHandler, DXL_ID[1], ADDR_PRO_PRESENT_POSITION)
     
-        if hip_pos < cpg.criticalHipPos and hip_pos > cpg.criticalHipPos - 500:
+        if hip_pos < cpg.criticalHipPos and hip_pos > cpg.criticalHipPos - 200:
             cpg.elevator = False
             cpg.release = True
-            
+            print("-------------------")
 
-
+    print(cpg.criticalKneePos,knee_pos,cpg.criticalHipPos,hip_pos)
 
     check_communication(dxl_comm_result1,dxl_error1)
     check_communication(dxl_comm_result2,dxl_error2)

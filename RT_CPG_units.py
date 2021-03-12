@@ -12,12 +12,13 @@ class CPG():
         self.hopfMu = 1
         self.hopfOmega = math.pi
         self.torqueFeedback = 0
-        self.attenuation = 1/20
+        self.attenuation = 1/30
         self.offset = 0
         self.n = 0
         self.k = 60
         self.elevator = False
         self.criticalHipPos = 0
+        self.criticalKneePos = 0
         self.release = False
     
     
@@ -35,18 +36,23 @@ class CPG():
         #Online averaging to make the effect of large torque last longer.
         self.offset = self.offset + (self.torqueFeedback * self.attenuation - self.offset)/self.n
         #  
-        #add offset only to knee
-        x = math.sqrt(mu)*np.cos(omega*t) + self.offset
-        y = math.sqrt(mu)*np.sin(omega*t)
+
         
         if self.torqueFeedback > 50 and t > 1 and self.release == False:
             self.elevator = True
+            offset = 0
         else:
             self.release = False
-
+            offset = self.offset
+            
+        
+        
+        #add offset only to knee
+        x = math.sqrt(mu)*np.cos(omega*t) + offset
+        y = math.sqrt(mu)*np.sin(omega*t)
         #phase shifted values 
-        xd = math.sqrt(mu)*np.cos(omega*t)
-        yd = math.sqrt(mu)*np.sin(omega*t)
+        xd = math.sqrt(mu)*np.cos(omega*t + math.pi)
+        yd = math.sqrt(mu)*np.sin(omega*t + math.pi)
         
     
         return x,y,xd,yd
@@ -65,22 +71,19 @@ class CPG():
             
         x,y,xd,yd = self.hopf(time.time() - start)
         
-        # hip = math.pi /6 *y
-        # knee = math.pi/6*x if x > 0 else 0 
-
-        # hipd = math.pi /6 *yd
-        # kneed = math.pi/6*xd if xd > 0 else 0 
-        
-        hip = 30 *y
-        knee = 30*x if x > 0 else 0 
-
-        hipd = 30 *yd
-        kneed = 30*xd if xd > 0 else 0 
-
         if realWorld:
-            #print(hip,knee)
+            hip = 30 *y
+            knee = 30*x if x > 0 else 0 
+
+            hipd = 30 *yd
+            kneed = 30*xd if xd > 0 else 0 
             return angle_to_position(hip),angle_to_position(knee)
         else:
+            hip = math.pi /6 *y
+            knee = math.pi/6*x if x > 0 else 0 
+
+            hipd = math.pi /6 *yd
+            kneed = math.pi/6*xd if xd > 0 else 0 
             return hip,knee,hipd,kneed
 
 

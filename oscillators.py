@@ -2,6 +2,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 import math
+import time
 #Model for the VDp oscillator, z is the initial conditino to begin with and then the outputs of the solver 
 def vdp(t, z):
     epsilon = 0.1
@@ -35,8 +36,8 @@ def get_motor_commands():
     t = np.linspace(a, b, 1000)
 
     #solve differential equation 
-    #sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
-    sol = solve_ivp(vdp, [a, b], [1, 0], t_eval=t)
+    sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
+    #sol = solve_ivp(vdp, [a, b], [1, 0], t_eval=t)
 
     #transofrm the result into angles
     
@@ -56,7 +57,6 @@ def get_motor_commands():
     knee = np.array(knee)
     return hip,knee,t,sol
     
-
 def get_vector_portrait():
     l = 2.0
 
@@ -84,11 +84,10 @@ def get_vector_portrait():
 
     return X1[skip],X2[skip], U[skip],V[skip], vels[skip]
 
-
-
+    
 if __name__ == '__main__':
-    hip,knee,t,sol = get_motor_commands()
-    vector_x,vector_y,U,V,velocity = get_vector_portrait()
+    # hip,knee,t,sol = get_motor_commands()
+    # vector_x,vector_y,U,V,velocity = get_vector_portrait()
 
     # plt.figure()
     # plt.plot(sol.y[0],sol.y[1])
@@ -96,35 +95,35 @@ if __name__ == '__main__':
     # plt.xlabel("x")
     # plt.ylabel("y")
 
-    plt.figure()
-    plt.plot(t,sol.y[1],"b",label= "y")
-    plt.plot(t,sol.y[0],"-r", label = "x")
-    plt.xlabel("time")
-    plt.ylabel("position")
-    plt.title("Hopf oscillator outputs with b = 1, $\omega$ = 1")
-    plt.legend()
+    # plt.figure()
+    # plt.plot(t,sol.y[1],"b",label= "y")
+    # plt.plot(t,sol.y[0],"-r", label = "x")
+    # plt.xlabel("time")
+    # plt.ylabel("position")
+    # plt.title("Hopf oscillator outputs with b = 1, $\omega$ = 1")
+    # plt.legend()
 
 
-    plt.figure()
-    plt.plot(sol.y[0],sol.y[1],'-r')
-    Quiver = plt.quiver(vector_x,vector_y,
-                        U, V,
-                        velocity,
-                        units='height',
-                        angles='uv',
-                        scale=50,
-                        pivot='mid',
-                        # color='blue',
-                        cmap=plt.cm.seismic
-                        )
-    plt.title("Hopf Oscillator Vector Portrait with $\epsilon = 0.1$")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.colorbar(Quiver)
-    plt.xticks()
-    plt.yticks()
-    #plt.axis([-l, l, -l, l])
-    plt.grid()
+    # plt.figure()
+    # plt.plot(sol.y[0],sol.y[1],'-r')
+    # Quiver = plt.quiver(vector_x,vector_y,
+    #                     U, V,
+    #                     velocity,
+    #                     units='height',
+    #                     angles='uv',
+    #                     scale=50,
+    #                     pivot='mid',
+    #                     # color='blue',
+    #                     cmap=plt.cm.seismic
+    #                     )
+    # plt.title("Hopf Oscillator Vector Portrait with $\epsilon = 0.1$")
+    # plt.xlabel("x")
+    # plt.ylabel("y")
+    # plt.colorbar(Quiver)
+    # plt.xticks()
+    # plt.yticks()
+    # #plt.axis([-l, l, -l, l])
+    # plt.grid()
 
 
     # plt.figure()
