@@ -28,9 +28,12 @@ cpgUnits = []
 tol = 0.05
 hips = [9,15,3,6,12,0]
 knees = [10,16,4,7,13,1]
+ankles = [11,17,5,8,14,2]
 
 hipPos = np.zeros(nLegs)
 kneePos = np.zeros(nLegs)
+anklePos = np.zeros(nLegs)
+
 start = time.time()
 
 #gait matrices
@@ -49,10 +52,11 @@ for i in range (1000):
     
     for j in range(nLegs):
         hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
-
+        anklePos[j] = -kneePos[j]
     
     p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
     p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*tripod)
+    p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
     
     while 1:
         current_pos = p.getJointState(hexapod,10)[0]
