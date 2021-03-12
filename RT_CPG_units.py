@@ -8,7 +8,7 @@ from oscillators import angle_to_position
 
 class CPG():
 
-    def __init__(self):
+    def __init__(self,phase):
         self.hopfMu = 1
         self.hopfOmega = math.pi
         self.torqueFeedback = 0
@@ -20,7 +20,7 @@ class CPG():
         self.criticalHipPos = 0
         self.criticalKneePos = 0
         self.release = False
-    
+        self.phase = phase
     
     def hopf(self,t):
         
@@ -48,14 +48,10 @@ class CPG():
         
         
         #add offset only to knee
-        x = math.sqrt(mu)*np.cos(omega*t) + offset
-        y = math.sqrt(mu)*np.sin(omega*t)
-        #phase shifted values 
-        xd = math.sqrt(mu)*np.cos(omega*t + math.pi)
-        yd = math.sqrt(mu)*np.sin(omega*t + math.pi)
-        
-    
-        return x,y,xd,yd
+        x = math.sqrt(mu)*np.cos(omega*t + self.phase) + offset
+        y = math.sqrt(mu)*np.sin(omega*t + self.phase)
+
+        return x,y
 
 
     def vdp(self,t,z):
@@ -69,22 +65,18 @@ class CPG():
 
     def get_motor_commands(self,start,realWorld = False):
             
-        x,y,xd,yd = self.hopf(time.time() - start)
+        x,y = self.hopf(time.time() - start)
         
         if realWorld:
             hip = 30 *y
             knee = 30*x if x > 0 else 0 
 
-            hipd = 30 *yd
-            kneed = 30*xd if xd > 0 else 0 
             return angle_to_position(hip),angle_to_position(knee)
         else:
             hip = math.pi /6 *y
             knee = math.pi/6*x if x > 0 else 0 
 
-            hipd = math.pi /6 *yd
-            kneed = math.pi/6*xd if xd > 0 else 0 
-            return hip,knee,hipd,kneed
+            return hip,knee
 
 
 

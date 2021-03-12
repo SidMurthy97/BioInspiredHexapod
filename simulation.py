@@ -3,6 +3,7 @@ import time
 import pybullet_data
 from pprint import pprint  
 import math 
+import numpy as np
 from RT_CPG_units import CPG
 import matplotlib.pyplot as plt
 
@@ -10,7 +11,6 @@ def printJointInfo():
     for i in range(nJoints):
         print(p.getJointInfo(hexapod,i)[0:2])
 
-cpg = CPG()
 #set pybullet terms 
 physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
 p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
@@ -22,34 +22,41 @@ hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\pex
 p.setRealTimeSimulation(1) #use system clock to step simulaton
 
 nJoints = p.getNumJoints(hexapod)
-states = [0,math.pi/4]
+nLegs = 6
+cpgUnits = []
 
-tol = 0.05 #set tolerance 
+tol = 0.05
+hips = [9,15,3,6,12,0]
+knees = [10,16,4,7,13,1]
 
-shoulder1 = [10,13,4]
-hips1 = [9,12,3]
-
-shoulder2 = [7,16,1]
-hips2 = [6,15,0]
-
-hipbuffer= []
-shoulderbuffer= []
-
+hipPos = np.zeros(nLegs)
+kneePos = np.zeros(nLegs)
 start = time.time()
+
+#gait matrices
+tripod = [-1,-1,-1,1,1,1]
+tripodPhase = math.pi
+
+
+phaseLink = 0
+for i in range(nLegs):
+
+    cpgUnits.append(CPG(phaseLink))
+    phaseLink += tripodPhase
+
 # p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
 for i in range (1000):
     
-    hipPos,shoulderPos,hipdPos,shoulderdPos = cpg.get_motor_commands(start)
-    
-    p.setJointMotorControlArray(hexapod,shoulder1,p.POSITION_CONTROL,[shoulderPos]*len(shoulder1))
-    p.setJointMotorControlArray(hexapod,hips1,p.POSITION_CONTROL,[-hipPos,hipPos,-hipPos])
+    for j in range(nLegs):
+        hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
 
-    p.setJointMotorControlArray(hexapod,shoulder2,p.POSITION_CONTROL,[shoulderdPos]*len(shoulder1))
-    p.setJointMotorControlArray(hexapod,hips2,p.POSITION_CONTROL,[hipdPos,-hipdPos,hipdPos])
+    
+    p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
+    p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*tripod)
     
     while 1:
         current_pos = p.getJointState(hexapod,10)[0]
-        if abs(current_pos - shoulderPos) < tol:
+        if abs(current_pos - kneePos[0]) < tol:
             break
     p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
     time.sleep(1./240.)
