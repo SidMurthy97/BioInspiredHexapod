@@ -35,7 +35,6 @@ kneePos = np.zeros(nLegs)
 anklePos = np.zeros(nLegs)
 
 start = time.time()
-
 #gait matrices
 tripod = [-1,-1,-1,1,1,1]
 tripodPhase = math.pi
@@ -44,7 +43,8 @@ tripodPhase = math.pi
 phaseLink = 0
 for i in range(nLegs):
 
-    cpgUnits.append(CPG(phaseLink))
+    cpgUnits.append(CPG(phaseLink,start))
+    
     phaseLink += tripodPhase
 
 # p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")

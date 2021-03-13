@@ -17,9 +17,9 @@ def vdp(t, z):
 def hopf(z):
 
     x,y = z
-    a,mu,omega = 1,1,2*math.pi
+    a,mu= 1,1
 
-    #omega = math.pi/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1)
+    omega = math.pi/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1)
 
     return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
 

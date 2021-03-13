@@ -8,7 +8,7 @@ from oscillators import angle_to_position
 
 class CPG():
 
-    def __init__(self,phase):
+    def __init__(self,phase,prev):
         self.hopfMu = 1
         self.hopfOmega = math.pi
         self.torqueFeedback = 0
@@ -21,8 +21,11 @@ class CPG():
         self.criticalKneePos = 0
         self.release = False
         self.phase = phase
-    
-    def hopf(self,t):
+        
+        self.prev = prev
+        self.x = 1
+        self.y = 0
+    def hopfOld(self,t):
         
         #keep count of the number of times this function has been called to make online averaging accurate
         #averages only the last k values
@@ -35,9 +38,7 @@ class CPG():
 
         #Online averaging to make the effect of large torque last longer.
         self.offset = self.offset + (self.torqueFeedback * self.attenuation - self.offset)/self.n
-        #  
 
-        
         if self.torqueFeedback > 50 and t > 1 and self.release == False:
             self.elevator = True
             offset = 0
@@ -50,9 +51,35 @@ class CPG():
         #add offset only to knee
         x = math.sqrt(mu)*np.cos(omega*t + self.phase) + offset
         y = math.sqrt(mu)*np.sin(omega*t + self.phase)
+        
+        #self.hopfOmega = math.pi/(math.exp(-50*x) + 1) + (math.pi)/(math.exp(50*x) + 1)
 
+        
+        return x,y,self.hopfOmega
+
+    def hopf(self,z):
+        x,y = z
+        a,mu= 1,1
+
+        #angular frequency can be modulated using current position 
+        omega = math.pi/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1)
+
+        return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
+    
+    def euler(self,t,x,y):
+        
+        #set new timestamp to calculate next step size
+        self.prev = time.time()
+
+        #get gradients using the hopf oscillator equations
+        dx,dy = self.hopf([x,y])
+
+        #estimate next value using euler method 
+        x = x + t*dx
+        y = y + t*dy
+
+        #return new coordinates
         return x,y
-
 
     def vdp(self,t,z):
         b,w = 1,math.pi
@@ -64,15 +91,20 @@ class CPG():
         return x,y
 
     def get_motor_commands(self,start,realWorld = False):
-            
-        x,y = self.hopf(time.time() - start)
+
+        #use euler method to solve hopf equations     
+        self.x,self.y = self.euler(time.time() - self.prev,self.x,self.y)
         
-        if realWorld:
+        #convert oscillator outputs to motor positions 
+        x,y = self.x,self.y
+        
+        if realWorld: #if running on hardware convert to position
             hip = 30 *y
             knee = 30*x if x > 0 else 0 
 
             return angle_to_position(hip),angle_to_position(knee)
-        else:
+        
+        else: #if running in simulation, give radian angles
             hip = math.pi /6 *y
             knee = math.pi/6*x if x > 0 else 0 
 
@@ -81,16 +113,13 @@ class CPG():
 
 
 if __name__ == "__main__":
-    initial_conditions = [0,0]
-    x,y = initial_conditions
-    xr,yr,t = [],[], []
+    xr,yr,t,omegaList = [],[], [],[]
+    
     start = time.time()
-    cpg = CPG()
-
-    while time.time() - start < 10:
+    cpg = CPG(0,start)
+    while time.time() - start < 5:
         
-        hip,knee = cpg.get_motor_commands(start,True)
-        #knee,hip,_,_ = cpg.hopf(time.time() - start)
+        hip,knee = cpg.get_motor_commands(start,True) #get hip and knee commands by solving Hopf equations
 
         xr.append((hip))
         yr.append((knee))
@@ -100,11 +129,15 @@ if __name__ == "__main__":
     plt.plot(t,xr,"b", label = "Hip")
     plt.plot(t,yr,"r", label = "Knee")
 
-    # plt.plot(t,-1*xr)
-    # plt.plot(t,-1*yr)
     plt.xlabel("Time/s")
     plt.ylabel("Angles")
     plt.title("Expected Angle Profile") 
     plt.legend()
+    
+
+    # for i,x in enumerate(xr):
+    #     print(i,x)
+    #     test.append(2*math.pi/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1))
+        
     plt.show()
     
