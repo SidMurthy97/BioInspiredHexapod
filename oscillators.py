@@ -14,11 +14,13 @@ def vdp(t, z):
     #return is then the new conditions 
     return [y1, epsilon*(1- b*(x1**2))*y1 - omega*x1]
 
-def hopf(t,z):
-    a,mu,omega = 1,1,math.pi
-    x,y = z
+def hopf(z):
 
-    #returns [x,y]
+    x,y = z
+    a,mu,omega = 1,1,2*math.pi
+
+    #omega = math.pi/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1)
+
     return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
 
 def angle_to_position(angles):
@@ -31,13 +33,12 @@ def angle_to_position(angles):
     return positions
 
 def get_motor_commands():
-    a, b = 0, 10
+    a, b = 0, 100
 
-    t = np.linspace(a, b, 1000)
+    t = np.linspace(a, b, 100)
 
     #solve differential equation 
     sol = solve_ivp(hopf, [a, b], [1, 0], t_eval=t)
-    #sol = solve_ivp(vdp, [a, b], [1, 0], t_eval=t)
 
     #transofrm the result into angles
     
@@ -84,9 +85,60 @@ def get_vector_portrait():
 
     return X1[skip],X2[skip], U[skip],V[skip], vels[skip]
 
-    
+def rungeKutta(t,x,y,h = 0.01): 
+    # Count number of iterations using step size or 
+    # step height h 
+    n = (int)(t/h)  
+    # Iterate for number of iterations 
+    for _ in range(1, n + 1): 
+
+        k0,l0 = hopf([x,y]) 
+        k1,l1 = hopf([x+ 0.5 * k0, y + 0.5 * l0]) 
+        k2,l2 = hopf([x + 0.5 * k1, y + 0.5 * l1]) 
+        k3,l3 = hopf([x + k2, y + l2]) 
+  
+        # Update next value of y 
+        x = x + (h/ 6.0)*(k0 + 2 * k1 + 2 * k2 + k3) 
+        y = y + (h/ 6.0)*(l0 + 2 * l1 + 2 * l2 + l3) 
+
+    return x,y 
+
+def euler(t,x,y):
+    prev = time.time()
+    dx,dy = hopf([x,y])
+
+    x = x + t*dx
+    y = y + t*dy
+
+    return x,y,prev
+
+def rtSolve():
+
+    start = time.time()
+    tElapsed = time.time() - start
+    prev = time.time()
+    x = 1
+    y = 0
+    hip,knee,t = [],[],[]
+    while tElapsed < 5:    
+
+        #x,y = rungeKutta(time.time() - prev,x,y)
+        x,y,prev = euler(time.time() - prev,x,y)
+        
+        hip.append(x)
+        knee.append(y)
+        t.append(tElapsed)
+        tElapsed = time.time() - start
+
+    return hip,knee,t
+
+
 if __name__ == '__main__':
-    # hip,knee,t,sol = get_motor_commands()
+    #hip,knee,t,sol = get_motor_commands()
+    
+    hip,knee,t  = rtSolve()
+    
+    
     # vector_x,vector_y,U,V,velocity = get_vector_portrait()
 
     # plt.figure()
@@ -104,26 +156,26 @@ if __name__ == '__main__':
     # plt.legend()
 
 
-    # plt.figure()
-    # plt.plot(sol.y[0],sol.y[1],'-r')
-    # Quiver = plt.quiver(vector_x,vector_y,
-    #                     U, V,
-    #                     velocity,
-    #                     units='height',
-    #                     angles='uv',
-    #                     scale=50,
-    #                     pivot='mid',
-    #                     # color='blue',
-    #                     cmap=plt.cm.seismic
-    #                     )
-    # plt.title("Hopf Oscillator Vector Portrait with $\epsilon = 0.1$")
-    # plt.xlabel("x")
-    # plt.ylabel("y")
-    # plt.colorbar(Quiver)
-    # plt.xticks()
-    # plt.yticks()
-    # #plt.axis([-l, l, -l, l])
-    # plt.grid()
+    # # plt.figure()
+    # # plt.plot(sol.y[0],sol.y[1],'-r')
+    # # Quiver = plt.quiver(vector_x,vector_y,
+    # #                     U, V,
+    # #                     velocity,
+    # #                     units='height',
+    # #                     angles='uv',
+    # #                     scale=50,
+    # #                     pivot='mid',
+    # #                     # color='blue',
+    # #                     cmap=plt.cm.seismic
+    # #                     )
+    # # plt.title("Hopf Oscillator Vector Portrait with $\epsilon = 0.1$")
+    # # plt.xlabel("x")
+    # # plt.ylabel("y")
+    # # plt.colorbar(Quiver)
+    # # plt.xticks()
+    # # plt.yticks()
+    # # #plt.axis([-l, l, -l, l])
+    # # plt.grid()
 
 
     # plt.figure()
@@ -134,4 +186,11 @@ if __name__ == '__main__':
     # plt.title("Angle profile with time")
     # plt.legend()
 
+    plt.figure()
+    plt.plot(t,hip,"b",label= "Hip position")
+    plt.plot(t,knee,"-r", label = "Knee position")
+    plt.xlabel("time")
+    plt.ylabel("position")
+    plt.title("Angle profile with time")
+    # plt.legend()
     plt.show()
