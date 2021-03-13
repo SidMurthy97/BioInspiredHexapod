@@ -8,7 +8,7 @@ from oscillators import angle_to_position
 
 class CPG():
 
-    def __init__(self,phase,prev):
+    def __init__(self,prev,coupledCPG):
         self.hopfMu = 1
         self.hopfOmega = math.pi
         self.torqueFeedback = 0
@@ -20,11 +20,14 @@ class CPG():
         self.criticalHipPos = 0
         self.criticalKneePos = 0
         self.release = False
-        self.phase = phase
-        
+
         self.prev = prev
         self.x = 1
         self.y = 0
+
+        self.coupledCPG = coupledCPG
+        self.delta = 1
+        self.phase = math.pi
     def hopfOld(self,t):
         
         #keep count of the number of times this function has been called to make online averaging accurate
@@ -62,10 +65,12 @@ class CPG():
         a,mu= 1,1
 
         #angular frequency can be modulated using current position 
-        omega = math.pi/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1)
+        omega = (math.pi)/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1)
 
-        return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
-    
+        if self.coupledCPG:
+            return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x + self.coupledCPG.y * math.cos(self.phase) - self.coupledCPG.x * math.sin(self.phase)]
+        else:
+            return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
     def euler(self,t,x,y):
         
         #set new timestamp to calculate next step size
@@ -116,7 +121,7 @@ if __name__ == "__main__":
     xr,yr,t,omegaList = [],[], [],[]
     
     start = time.time()
-    cpg = CPG(0,start)
+    cpg = CPG(start,None)
     while time.time() - start < 5:
         
         hip,knee = cpg.get_motor_commands(start,True) #get hip and knee commands by solving Hopf equations

@@ -22,13 +22,19 @@ hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\pex
 p.setRealTimeSimulation(1) #use system clock to step simulaton
 
 nJoints = p.getNumJoints(hexapod)
-nLegs = 6
+
 cpgUnits = []
 
 tol = 0.05
 hips = [9,15,3,6,12,0]
 knees = [10,16,4,7,13,1]
 ankles = [11,17,5,8,14,2]
+
+# hips = [9,15]
+# knees = [10,16]
+# ankles = [11,17]
+
+nLegs = len(hips)
 
 hipPos = np.zeros(nLegs)
 kneePos = np.zeros(nLegs)
@@ -38,22 +44,30 @@ start = time.time()
 #gait matrices
 tripod = [-1,-1,-1,1,1,1]
 tripodPhase = math.pi
+transientPeriod = 5
 
 
-phaseLink = 0
+#couple all cpgs to the first one
 for i in range(nLegs):
-
-    cpgUnits.append(CPG(phaseLink,start))
+    if i == 0:
+        cpgUnits.append(CPG(start,None))
+    else:
+        cpgUnits.append(CPG(start,cpgUnits[i-1]))
     
-    phaseLink += tripodPhase
-
 # p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
-for i in range (1000):
+
+for i in range (10000):
     
+    #allow CPG outputs to settle
+    while time.time() - start < transientPeriod:
+        for j in range(nLegs):
+            hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
+            anklePos[j] = -kneePos[j]      
+
     for j in range(nLegs):
         hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
         anklePos[j] = -kneePos[j]
-    
+
     p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
     p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*tripod)
     p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
