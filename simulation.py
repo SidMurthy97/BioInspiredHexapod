@@ -44,7 +44,7 @@ start = time.time()
 #gait matrices
 tripod = [-1,-1,-1,1,1,1]
 tripodPhase = math.pi
-transientPeriod = 5
+transientPeriod = 10
 
 
 #couple all cpgs to the first one
@@ -58,24 +58,25 @@ for i in range(nLegs):
 
 for i in range (10000):
     
-    #allow CPG outputs to settle
-    while time.time() - start < transientPeriod:
-        for j in range(nLegs):
-            hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
-            anklePos[j] = -kneePos[j]      
+    # #allow CPG outputs to settle
+    # while time.time() - start < transientPeriod:
+        
+    #     for j in range(nLegs):
+    #         hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
+    #         anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability      
 
     for j in range(nLegs):
         hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
-        anklePos[j] = -kneePos[j]
+        anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability     
 
     p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
     p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*tripod)
     p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
     
-    while 1:
-        current_pos = p.getJointState(hexapod,10)[0]
-        if abs(current_pos - kneePos[0]) < tol:
-            break
+    # while 1:
+    #     current_pos = p.getJointState(hexapod,10)[0]
+    #     if abs(current_pos - kneePos[0]) < tol:
+    #         break
     p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
     time.sleep(1./240.)
     

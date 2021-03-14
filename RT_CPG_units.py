@@ -26,7 +26,7 @@ class CPG():
         self.y = 0
 
         self.coupledCPG = coupledCPG
-        self.delta = 1
+        self.delta = math.pi
         self.phase = math.pi
     def hopfOld(self,t):
         
@@ -68,9 +68,10 @@ class CPG():
         omega = (math.pi)/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1)
 
         if self.coupledCPG:
-            return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x + self.coupledCPG.y * math.cos(self.phase) - self.coupledCPG.x * math.sin(self.phase)]
+            return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x + self.delta*(self.coupledCPG.y * math.cos(self.phase) - self.coupledCPG.x * math.sin(self.phase))]
         else:
             return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
+    
     def euler(self,t,x,y):
         
         #set new timestamp to calculate next step size
@@ -110,7 +111,7 @@ class CPG():
             return angle_to_position(hip),angle_to_position(knee)
         
         else: #if running in simulation, give radian angles
-            hip = math.pi /6 *y
+            hip = math.pi/12 *y
             knee = math.pi/6*x if x > 0 else 0 
 
             return hip,knee
