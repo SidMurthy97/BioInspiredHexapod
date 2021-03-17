@@ -8,9 +8,13 @@ from oscillators import angle_to_position
 
 class CPG():
 
-    def __init__(self,prev,coupledCPG):
+    def __init__(self,prev):
+        #hopf parameters
         self.hopfMu = 1
-        self.hopfOmega = math.pi
+        self.stanceF = math.pi
+        self.swingF = math.pi
+        
+        #Torque feedback parameters
         self.torqueFeedback = 0
         self.attenuation = 1/30
         self.offset = 0
@@ -21,12 +25,14 @@ class CPG():
         self.criticalKneePos = 0
         self.release = False
 
+        #Numerical solving parameters
         self.prev = prev
         self.x = 1
         self.y = 0
 
-        self.coupledCPG = coupledCPG
-        self.delta = math.pi
+        #phase coupling parameters
+        self.coupledCPG = None
+        self.delta = 1
         self.phase = math.pi
     def hopfOld(self,t):
         
@@ -65,12 +71,22 @@ class CPG():
         a,mu= 1,1
 
         #angular frequency can be modulated using current position 
-        omega = (math.pi)/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1)
+        omega = self.stanceF/(math.exp(-10*x) + 1) + self.swingF/(math.exp(10*x) + 1)
 
+
+        dx = a*(mu - x**2 - y**2)*x - omega*y
+        dy =  a*(mu - x**2 - y **2)*y + omega*x
+        
         if self.coupledCPG:
-            return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x + self.delta*(self.coupledCPG.y * math.cos(self.phase) - self.coupledCPG.x * math.sin(self.phase))]
+            deltaSum = 0
+            for unit in self.coupledCPG:
+                deltaSum +=  (unit.y * np.cos(self.phase) - unit.x * np.sin(self.phase))
+            
+            couplingTerm = self.delta * deltaSum
+            
+            return dx, dy + couplingTerm
         else:
-            return [a*(mu - x**2 - y**2)*x - omega*y, a*(mu - x**2 - y **2)*y + omega*x]
+            return dx,dy
     
     def euler(self,t,x,y):
         
@@ -81,11 +97,11 @@ class CPG():
         dx,dy = self.hopf([x,y])
 
         #estimate next value using euler method 
-        x = x + t*dx
-        y = y + t*dy
+        self.x =  x + t*dx
+        self.y = y + t*dy
 
         #return new coordinates
-        return x,y
+        return self.x,self.y
 
     def vdp(self,t,z):
         b,w = 1,math.pi
@@ -99,11 +115,8 @@ class CPG():
     def get_motor_commands(self,start,realWorld = False):
 
         #use euler method to solve hopf equations     
-        self.x,self.y = self.euler(time.time() - self.prev,self.x,self.y)
-        
-        #convert oscillator outputs to motor positions 
-        x,y = self.x,self.y
-        
+        x,y= self.euler(time.time() - self.prev,self.x,self.y)
+              
         if realWorld: #if running on hardware convert to position
             hip = 30 *y
             knee = 30*x if x > 0 else 0 
@@ -122,22 +135,50 @@ if __name__ == "__main__":
     xr,yr,t,omegaList = [],[], [],[]
     
     start = time.time()
-    cpg = CPG(start,None)
-    while time.time() - start < 5:
-        
-        hip,knee = cpg.get_motor_commands(start,True) #get hip and knee commands by solving Hopf equations
 
-        xr.append((hip))
-        yr.append((knee))
+    cpgUnits = []
+    ncpgs = 6
+    #lists to store cpg outputs
+    cpg1,cpg2,cpg3,cpg4,cpg5,cpg6 = [],[],[],[],[],[]
+    
+    #initialise CPGs
+    for i in range(ncpgs):
+            cpgUnits.append(CPG(start))
+    
+    #couple CPGs
+    for i in range(ncpgs):
+        prevUnit = cpgUnits[i-1]
+        nextUnit = cpgUnits[(i+1)%ncpgs]
+        cpgUnits[i].coupledCPG = [prevUnit,nextUnit]
+    
+    
+    y = np.zeros(ncpgs)
+
+    while time.time() - start < 40:
+        
+        for i in range(ncpgs):
+            y[i],_= cpgUnits[i].euler(time.time() - cpgUnits[i].prev,cpgUnits[i].x,cpgUnits[i].y)
+        
+
+        cpg1.append(y[0])
+        cpg2.append(y[1])
+        cpg3.append(y[2])
+        cpg4.append(y[3])
+        cpg5.append(y[4])
+        cpg6.append(y[5])
         t.append(time.time() - start)
 
     plt.figure()
-    plt.plot(t,xr,"b", label = "Hip")
-    plt.plot(t,yr,"r", label = "Knee")
+    plt.plot(t,cpg1, label = "cpg1")
+    plt.plot(t,cpg2, label = "cpg2")
+    plt.plot(t,cpg3, '--',label = "cpg3")
+    plt.plot(t,cpg4, '--',label = "cpg4")
+    plt.plot(t,cpg5, '--',label = "cpg5")
+    plt.plot(t,cpg6, '--',label = "cpg6")
 
     plt.xlabel("Time/s")
-    plt.ylabel("Angles")
-    plt.title("Expected Angle Profile") 
+    # plt.ylabel("Angles")
+    # plt.title("Expected Angle Profile") 
     plt.legend()
     
 
