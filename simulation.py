@@ -26,9 +26,11 @@ nJoints = p.getNumJoints(hexapod)
 cpgUnits = []
 
 tol = 0.05
-hips = [9,15,3,6,12,0]
-knees = [10,16,4,7,13,1]
-ankles = [11,17,5,8,14,2]
+
+#legs are defined in an anticlockwise way
+hips = [9,15,3,0,12,6]
+knees = [10,16,4,1,13,7]
+ankles = [11,17,5,2,14,8]
 
 # hips = [9,15]
 # knees = [10,16]
@@ -47,24 +49,23 @@ tripodPhase = math.pi
 transientPeriod = 10
 
 
-#couple all cpgs to the first one
+
+#initialise CPGs
 for i in range(nLegs):
-    if i == 0:
-        cpgUnits.append(CPG(start,None))
-    else:
-        cpgUnits.append(CPG(start,cpgUnits[i-1]))
+        cpgUnits.append(CPG(start))
+
+#couple CPGs
+for i in range(nLegs):
+    prevUnit = cpgUnits[i-1]
+    nextUnit = cpgUnits[(i+1)%nLegs]
+    cpgUnits[i].coupledCPG = [prevUnit,nextUnit]
     
+
 # p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
 
 for i in range (10000):
-    
-    # #allow CPG outputs to settle
-    # while time.time() - start < transientPeriod:
-        
-    #     for j in range(nLegs):
-    #         hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
-    #         anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability      
 
+    #get positions for all legs 
     for j in range(nLegs):
         hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
         anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability     
