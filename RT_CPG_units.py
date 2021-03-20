@@ -3,7 +3,7 @@ import numpy as np
 import math 
 import time 
 from oscillators import angle_to_position
-
+import pprint
 
 
 class CPG():
@@ -11,7 +11,7 @@ class CPG():
     def __init__(self,prev):
         #hopf parameters
         self.hopfMu = 1
-        self.stanceF = math.pi
+        self.stanceF = (1/3)*math.pi
         self.swingF = math.pi
         
         #Torque feedback parameters
@@ -31,9 +31,9 @@ class CPG():
         self.y = 0
 
         #phase coupling parameters
-        self.coupledCPG = None
+        self.coupledCPG = [None]
         self.delta = 1
-        self.phase = math.pi
+
     def hopfOld(self,t):
         
         #keep count of the number of times this function has been called to make online averaging accurate
@@ -76,18 +76,38 @@ class CPG():
 
         dx = a*(mu - x**2 - y**2)*x - omega*y
         dy =  a*(mu - x**2 - y **2)*y + omega*x
-        
-        if self.coupledCPG:
-            deltaSum = 0
-            for unit in self.coupledCPG:
-                deltaSum +=  (unit.y * np.cos(self.phase) - unit.x * np.sin(self.phase))
+        #print(self.coupledCPG)
+        if self.coupledCPG[0] != None:
             
-            couplingTerm = self.delta * deltaSum
+            # deltaSum = 0
+            # #print(self.coupledCPG)
+            # for couple in self.coupledCPG:
+            #     phase = couple[1]
+            #     unit = couple[0]
+            #     deltaSum +=  (unit.y * np.cos(phase) - unit.x * np.sin(phase))
+
+            # return dx, dy + deltaSum
+
             
-            return dx, dy + couplingTerm
+            deltaSumX,deltaSumY = 0,0
+            #print(self.coupledCPG)
+            for couple in self.coupledCPG:
+                #print(couple)
+                phase = couple[1]
+                unit = couple[0]
+
+                deltaSumX = (unit.x + unit.y)/(math.sqrt(unit.x**2 + unit.y**2)) * np.sin(phase)
+                deltaSumY = (unit.x + unit.y)/(math.sqrt(unit.x**2 + unit.y**2)) * np.cos(phase)
+                #print(deltaSumX,deltaSumY)
+            return dx - deltaSumX, dy + deltaSumY
+            
         else:
             return dx,dy
     
+    def couple(self,influencerUnit,phase):
+        self.coupledCPG.append([influencerUnit,phase])
+
+
     def euler(self,t,x,y):
         
         #set new timestamp to calculate next step size
@@ -138,6 +158,7 @@ if __name__ == "__main__":
 
     cpgUnits = []
     ncpgs = 6
+
     #lists to store cpg outputs
     cpg1,cpg2,cpg3,cpg4,cpg5,cpg6 = [],[],[],[],[],[]
     
@@ -145,19 +166,30 @@ if __name__ == "__main__":
     for i in range(ncpgs):
             cpgUnits.append(CPG(start))
     
+    #NEED BETTER WAY TO DEFINE CPGS AND PHASE RELATIONSHIPS BETWEEN LEGS 
     #couple CPGs
+    phase = math.pi
     for i in range(ncpgs):
-        prevUnit = cpgUnits[i-1]
+        prevUnit = cpgUnits[(i-1)%ncpgs]
         nextUnit = cpgUnits[(i+1)%ncpgs]
-        cpgUnits[i].coupledCPG = [prevUnit,nextUnit]
-    
-    
+        
+        cpgUnits[i].coupledCPG = [[prevUnit,phase],[nextUnit,phase]]
+
+    # cpgUnits[-1].coupledCPG = [[cpgUnits[0],-phase]]
+
+    # for i in range(ncpgs):
+    #     prevUnit = cpgUnits[(i-1)%ncpgs]
+    #     nextUnit = cpgUnits[(i+1)%ncpgs]
+
+    #     cpgUnits[i].coupledCPG = [[nextUnit,math.pi/3],[prevUnit,-math.pi/3]]
+
+
     y = np.zeros(ncpgs)
 
-    while time.time() - start < 40:
+    while time.time() - start < 30:
         
         for i in range(ncpgs):
-            y[i],_= cpgUnits[i].euler(time.time() - cpgUnits[i].prev,cpgUnits[i].x,cpgUnits[i].y)
+            y[i],_ = cpgUnits[i].euler(time.time() - cpgUnits[i].prev,cpgUnits[i].x,cpgUnits[i].y)
         
 
         cpg1.append(y[0])

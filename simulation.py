@@ -18,6 +18,7 @@ p.setGravity(0,0,-10)
 planeId = p.loadURDF("plane.urdf") #load plane
 startPos = [0,0,1]
 startOrientation = p.getQuaternionFromEuler([0,0,0])
+#hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\stationaryHexapod.urdf",startPos, startOrientation,globalScaling=3,useFixedBase=True) #load robot and make it bigger
 hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\pexod.urdf",startPos, startOrientation,globalScaling=3) #load robot and make it bigger
 p.setRealTimeSimulation(1) #use system clock to step simulaton
 
@@ -49,18 +50,18 @@ tripodPhase = math.pi
 transientPeriod = 10
 
 
-
 #initialise CPGs
 for i in range(nLegs):
         cpgUnits.append(CPG(start))
 
 #couple CPGs
-for i in range(nLegs):
-    prevUnit = cpgUnits[i-1]
-    nextUnit = cpgUnits[(i+1)%nLegs]
-    cpgUnits[i].coupledCPG = [prevUnit,nextUnit]
+ncpgs = nLegs
+phase = math.pi
+for i in range(ncpgs):
+    prevUnit = cpgUnits[(i-1)%ncpgs]
+    nextUnit = cpgUnits[(i+1)%ncpgs]
     
-
+    cpgUnits[i].coupledCPG = [[prevUnit,phase],[nextUnit,phase]]
 # p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
 
 for i in range (10000):
@@ -78,7 +79,7 @@ for i in range (10000):
     #     current_pos = p.getJointState(hexapod,10)[0]
     #     if abs(current_pos - kneePos[0]) < tol:
     #         break
-    p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
+    #p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
     time.sleep(1./240.)
     
 p.disconnect()
