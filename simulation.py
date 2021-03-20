@@ -44,26 +44,40 @@ kneePos = np.zeros(nLegs)
 anklePos = np.zeros(nLegs)
 
 start = time.time()
-#gait matrices
+
+#matrix transform to reverse one side of the robot  
 tripod = [-1,-1,-1,1,1,1]
-tripodPhase = math.pi
-transientPeriod = 10
+
 
 
 #initialise CPGs
 for i in range(nLegs):
         cpgUnits.append(CPG(start))
 
-#couple CPGs
-ncpgs = nLegs
-phase = math.pi
-for i in range(ncpgs):
-    prevUnit = cpgUnits[(i-1)%ncpgs]
-    nextUnit = cpgUnits[(i+1)%ncpgs]
-    
-    cpgUnits[i].coupledCPG = [[prevUnit,phase],[nextUnit,phase]]
-# p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
 
+gait = 'm' #t:tripod, m:metachronal
+
+
+#set up CPG framework for different gaits
+if gait == 't':
+    #tripod gait allows for bidirectional coupling 
+    ncpgs = nLegs
+    phase = math.pi
+    for i in range(ncpgs):
+        prevUnit = cpgUnits[(i-1)%ncpgs]
+        nextUnit = cpgUnits[(i+1)%ncpgs]
+        cpgUnits[i].coupledCPG = [[prevUnit,phase],[nextUnit,phase]]
+
+elif gait == 'm':
+    #framework from campos et al
+    cpgUnits[5].coupledCPG = [[cpgUnits[0],math.pi]]
+    cpgUnits[1].coupledCPG = [[cpgUnits[0],math.pi/3]]
+    cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/3],[cpgUnits[1],math.pi]]
+    cpgUnits[2].coupledCPG = [[cpgUnits[1],math.pi/3]]
+    cpgUnits[3].coupledCPG = [[cpgUnits[2],math.pi],[cpgUnits[4],math.pi/3]]
+
+
+# p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
 for i in range (10000):
 
     #get positions for all legs 
