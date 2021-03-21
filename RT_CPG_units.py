@@ -8,13 +8,12 @@ import pprint
 
 class CPG():
 
-    def __init__(self,prev):
+    def __init__(self,prev,beta):
         #hopf parameters
         self.hopfMu = 1
 
-
-        self.stanceF = (1)*math.pi
-        self.swingF = (1/5)*math.pi
+        self.stanceF = ((1 - beta)/beta)*math.pi
+        self.swingF = (1)*math.pi
         
         #Torque feedback parameters
         self.torqueFeedback = 0
@@ -77,7 +76,7 @@ class CPG():
 
         #angular frequency can be modulated using current position 
 
-        omega = self.stanceF/(math.exp(-b*x) + 1) + self.swingF/(math.exp(b*x) + 1)
+        omega = self.swingF/(math.exp(-b*x) + 1) + self.stanceF/(math.exp(b*x) + 1)
         
         self.omegaList.append(omega)
 
@@ -170,22 +169,23 @@ if __name__ == "__main__":
     
 
     #couple CPGs according to Campos et al
-    cpgUnits[5].coupledCPG = [[cpgUnits[0],math.pi]]
+    cpgUnits[0].coupledCPG = [None]
     cpgUnits[1].coupledCPG = [[cpgUnits[0],math.pi/3]]
-    cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/3],[cpgUnits[1],math.pi]]
     cpgUnits[2].coupledCPG = [[cpgUnits[1],math.pi/3]]
     cpgUnits[3].coupledCPG = [[cpgUnits[2],math.pi],[cpgUnits[4],math.pi/3]]
+    cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/3],[cpgUnits[1],math.pi]]
+    cpgUnits[5].coupledCPG = [[cpgUnits[0],math.pi]]
 
     y = np.zeros(ncpgs)
     x = np.zeros(ncpgs)
 
 
-    duration = 30
+    duration = 120
     while time.time() - start < duration:
         
         for i in range(ncpgs):
             y[i],x[i] = cpgUnits[i].get_motor_commands(start)      
-            #   y[i],x[i] = cpgUnits[i].euler(time.time() - cpgUnits[i].prev,cpgUnits[i].x,cpgUnits[i].y)
+            #y[i],x[i] = cpgUnits[i].euler(time.time() - cpgUnits[i].prev,cpgUnits[i].x,cpgUnits[i].y)
         
 
         cpg1.append(y[0])
@@ -199,20 +199,21 @@ if __name__ == "__main__":
         cpg2x.append(x[1])
         t.append(time.time() - start)
 
-    # plt.figure()
-    # plt.plot(t,cpg1, label = "cpg1")
-    # plt.plot(t,cpg2, label = "cpg2")
-    # # plt.plot(t,cpg3, '--',label = "cpg3")
-    # # plt.plot(t,cpg4, '--',label = "cpg4")
-    # # plt.plot(t,cpg5, ':',label = "cpg5")
-    # plt.plot(t,cpg6, ':',label = "cpg6")
-    # plt.xlabel("Time/s")
-    # plt.legend()
-    
     plt.figure()
-    plt.plot(t,cpg1x,label = "x")
-    plt.plot(t,cpg1,label = "y")
+    plt.plot(t,cpg1,'b', label = "cpg1")
+    plt.plot(t,cpg2,'r',label = "cpg2")
+    plt.plot(t,cpg3, 'b--',label = "cpg3")
+    plt.plot(t,cpg4, 'r--',label = "cpg4")
+    plt.plot(t,cpg5, 'b:',label = "cpg5")
+    plt.plot(t,cpg6, 'r:',label = "cpg6")
+    plt.xlabel("Time/s")
+    plt.xlim(left=90)
     plt.legend()
+    
+    # plt.figure()
+    # plt.plot(t,cpg1x,label = "x")
+    # plt.plot(t,cpg1,label = "y")
+    # plt.legend()
     # plt.figure()
     # plt.plot(t,cpgUnits[1].omegaList)
         

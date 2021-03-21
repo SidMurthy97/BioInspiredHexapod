@@ -48,37 +48,44 @@ start = time.time()
 #matrix transform to reverse one side of the robot  
 tripod = [-1,-1,-1,1,1,1]
 
-
-
-#initialise CPGs
-for i in range(nLegs):
-        cpgUnits.append(CPG(start))
-
-
-gait = 'm' #t:tripod, m:metachronal
-
+gait = 't' #t:tripod, m:metachronal
 
 #set up CPG framework for different gaits
 if gait == 't':
+    #initialise CPGs
+    for i in range(nLegs):
+            cpgUnits.append(CPG(start,0.5))
+
     #tripod gait allows for bidirectional coupling 
     ncpgs = nLegs
     phase = math.pi
+    transient = 0
     for i in range(ncpgs):
         prevUnit = cpgUnits[(i-1)%ncpgs]
         nextUnit = cpgUnits[(i+1)%ncpgs]
         cpgUnits[i].coupledCPG = [[prevUnit,phase],[nextUnit,phase]]
 
 elif gait == 'm':
+
+    #initialise CPGs
+    for i in range(nLegs):
+            cpgUnits.append(CPG(start,5/6))
     #framework from campos et al
-    cpgUnits[5].coupledCPG = [[cpgUnits[0],math.pi]]
+    cpgUnits[0].coupledCPG = [None]
     cpgUnits[1].coupledCPG = [[cpgUnits[0],math.pi/3]]
-    cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/3],[cpgUnits[1],math.pi]]
     cpgUnits[2].coupledCPG = [[cpgUnits[1],math.pi/3]]
     cpgUnits[3].coupledCPG = [[cpgUnits[2],math.pi],[cpgUnits[4],math.pi/3]]
+    cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/3],[cpgUnits[1],math.pi]]
+    cpgUnits[5].coupledCPG = [[cpgUnits[0],math.pi]]
 
-
+    transient = 30
 # p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
 for i in range (10000):
+
+    while time.time() - start < transient:
+        #allow CPG units to run for transient period 
+        for j in range(nLegs):
+            hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
 
     #get positions for all legs 
     for j in range(nLegs):
@@ -93,7 +100,7 @@ for i in range (10000):
     #     current_pos = p.getJointState(hexapod,10)[0]
     #     if abs(current_pos - kneePos[0]) < tol:
     #         break
-    #p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
+    p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
     time.sleep(1./240.)
     
 p.disconnect()
