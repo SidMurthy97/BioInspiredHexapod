@@ -11,8 +11,10 @@ class CPG():
     def __init__(self,prev):
         #hopf parameters
         self.hopfMu = 1
-        self.stanceF = (1/5)*math.pi
-        self.swingF = math.pi
+
+
+        self.stanceF = (1)*math.pi
+        self.swingF = (1/5)*math.pi
         
         #Torque feedback parameters
         self.torqueFeedback = 0
@@ -33,6 +35,9 @@ class CPG():
         #phase coupling parameters
         self.coupledCPG = [None]
         self.delta = 1
+
+        #debug outputs
+        self.omegaList = []
 
     def hopfOld(self,t):
         
@@ -68,11 +73,13 @@ class CPG():
 
     def hopf(self,z):
         x,y = z
-        a,mu,b= 50,1,0.1
+        a,mu,b= 20,1,20
 
         #angular frequency can be modulated using current position 
-        omega = self.stanceF/(math.exp(-b*y) + 1) + self.swingF/(math.exp(b*y) + 1)
 
+        omega = self.stanceF/(math.exp(-b*x) + 1) + self.swingF/(math.exp(b*x) + 1)
+        
+        self.omegaList.append(omega)
 
         dx = a*(mu - x**2 - y**2)*x - omega*y
         dy =  a*(mu - x**2 - y **2)*y + omega*x
@@ -86,13 +93,12 @@ class CPG():
                 unit = couple[0]
                 deltaSum +=  (unit.y * np.cos(phase) - unit.x * np.sin(phase))
 
-            return dx, dy + deltaSum
+            return dx, dy + 0.4*deltaSum
 
             
             # deltaSumX,deltaSumY = 0,0
             # #print(self.coupledCPG)
             # for couple in self.coupledCPG:
-            #     #print(couple)
             #     phase = couple[1]
             #     unit = couple[0]
 
@@ -140,8 +146,8 @@ class CPG():
             return angle_to_position(hip),angle_to_position(knee)
         
         else: #if running in simulation, give radian angles
-            hip = math.pi/12 *y
-            knee = math.pi/6*x if x > 0 else 0 
+            hip = (math.pi/6)*y
+            knee = (math.pi/6)*x if x > 0 else 0 
 
             return hip,knee
 
@@ -157,7 +163,7 @@ if __name__ == "__main__":
 
     #lists to store cpg outputs
     cpg1,cpg2,cpg3,cpg4,cpg5,cpg6 = [],[],[],[],[],[]
-    
+    cpg1x,cpg2x = [],[]
     #initialise CPGs
     for i in range(ncpgs):
             cpgUnits.append(CPG(start))
@@ -165,18 +171,21 @@ if __name__ == "__main__":
 
     #couple CPGs according to Campos et al
     cpgUnits[5].coupledCPG = [[cpgUnits[0],math.pi]]
-    # cpgUnits[0].coupledCPG = [[cpgUnits[5],math.pi]]
     cpgUnits[1].coupledCPG = [[cpgUnits[0],math.pi/3]]
     cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/3],[cpgUnits[1],math.pi]]
     cpgUnits[2].coupledCPG = [[cpgUnits[1],math.pi/3]]
     cpgUnits[3].coupledCPG = [[cpgUnits[2],math.pi],[cpgUnits[4],math.pi/3]]
 
     y = np.zeros(ncpgs)
+    x = np.zeros(ncpgs)
 
-    while time.time() - start < 30:
+
+    duration = 30
+    while time.time() - start < duration:
         
         for i in range(ncpgs):
-            y[i],_ = cpgUnits[i].euler(time.time() - cpgUnits[i].prev,cpgUnits[i].x,cpgUnits[i].y)
+            y[i],x[i] = cpgUnits[i].get_motor_commands(start)      
+            #   y[i],x[i] = cpgUnits[i].euler(time.time() - cpgUnits[i].prev,cpgUnits[i].x,cpgUnits[i].y)
         
 
         cpg1.append(y[0])
@@ -185,22 +194,27 @@ if __name__ == "__main__":
         cpg4.append(y[3])
         cpg5.append(y[4])
         cpg6.append(y[5])
+
+        cpg1x.append(x[0])
+        cpg2x.append(x[1])
         t.append(time.time() - start)
 
-    plt.figure()
-    plt.plot(t,cpg1, label = "cpg1")
-    plt.plot(t,cpg2, label = "cpg2")
-    plt.plot(t,cpg3, '--',label = "cpg3")
-    plt.plot(t,cpg4, '--',label = "cpg4")
-    plt.plot(t,cpg5, ':',label = "cpg5")
-    plt.plot(t,cpg6, ':',label = "cpg6")
-    plt.xlabel("Time/s")
-    plt.legend()
+    # plt.figure()
+    # plt.plot(t,cpg1, label = "cpg1")
+    # plt.plot(t,cpg2, label = "cpg2")
+    # # plt.plot(t,cpg3, '--',label = "cpg3")
+    # # plt.plot(t,cpg4, '--',label = "cpg4")
+    # # plt.plot(t,cpg5, ':',label = "cpg5")
+    # plt.plot(t,cpg6, ':',label = "cpg6")
+    # plt.xlabel("Time/s")
+    # plt.legend()
     
-
-    # for i,x in enumerate(xr):
-    #     print(i,x)
-    #     test.append(2*math.pi/(math.exp(-10*x) + 1) + math.pi/(math.exp(10*x) + 1))
+    plt.figure()
+    plt.plot(t,cpg1x,label = "x")
+    plt.plot(t,cpg1,label = "y")
+    plt.legend()
+    # plt.figure()
+    # plt.plot(t,cpgUnits[1].omegaList)
         
     plt.show()
     
