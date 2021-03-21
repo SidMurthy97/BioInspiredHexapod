@@ -151,7 +151,6 @@ class CPG():
             return hip,knee
 
 
-
 if __name__ == "__main__":
     xr,yr,t,omegaList = [],[], [],[]
     
@@ -170,11 +169,11 @@ if __name__ == "__main__":
 
     #couple CPGs according to Campos et al
     cpgUnits[0].coupledCPG = [None]
-    cpgUnits[1].coupledCPG = [[cpgUnits[0],math.pi/3]]
-    cpgUnits[2].coupledCPG = [[cpgUnits[1],math.pi/3]]
-    cpgUnits[3].coupledCPG = [[cpgUnits[2],math.pi],[cpgUnits[4],math.pi/3]]
-    cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/3],[cpgUnits[1],math.pi]]
-    cpgUnits[5].coupledCPG = [[cpgUnits[0],math.pi]]
+    cpgUnits[1].coupledCPG = [[cpgUnits[0],-3*math.pi/2]]
+    cpgUnits[2].coupledCPG = [[cpgUnits[1],math.pi/2]]
+    cpgUnits[3].coupledCPG = [[cpgUnits[2],math.pi],[cpgUnits[4],math.pi/2]]
+    cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/2],[cpgUnits[1],math.pi]]
+    cpgUnits[5].coupledCPG = [[cpgUnits[0],-math.pi]]
 
     y = np.zeros(ncpgs)
     x = np.zeros(ncpgs)

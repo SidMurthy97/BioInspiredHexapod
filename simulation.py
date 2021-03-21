@@ -59,7 +59,6 @@ if gait == 't':
     #tripod gait allows for bidirectional coupling 
     ncpgs = nLegs
     phase = math.pi
-    transient = 0
     for i in range(ncpgs):
         prevUnit = cpgUnits[(i-1)%ncpgs]
         nextUnit = cpgUnits[(i+1)%ncpgs]
@@ -78,10 +77,26 @@ elif gait == 'm':
     cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/3],[cpgUnits[1],math.pi]]
     cpgUnits[5].coupledCPG = [[cpgUnits[0],math.pi]]
 
-    transient = 30
-# p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
-for i in range (10000):
 
+elif gait == 'r':
+    #initialise CPGs
+    for i in range(nLegs):
+            cpgUnits.append(CPG(start,3/4))   
+
+    cpgUnits[0].coupledCPG = [None]
+    cpgUnits[1].coupledCPG = [[cpgUnits[0],-3*math.pi/2]]
+    cpgUnits[2].coupledCPG = [[cpgUnits[1],math.pi/2]]
+    cpgUnits[3].coupledCPG = [[cpgUnits[2],math.pi],[cpgUnits[4],math.pi/2]]
+    cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/2],[cpgUnits[1],math.pi]]
+    cpgUnits[5].coupledCPG = [[cpgUnits[0],-math.pi]]
+
+
+transient = 30
+
+
+
+# p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"tripod_gait.mp4")
+for i in range (5000):
     while time.time() - start < transient:
         #allow CPG units to run for transient period 
         for j in range(nLegs):
