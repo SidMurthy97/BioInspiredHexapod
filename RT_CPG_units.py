@@ -139,13 +139,13 @@ class CPG():
         x,y= self.euler(time.time() - self.prev,self.x,self.y)
               
         if realWorld: #if running on hardware convert to position
-            hip = 30 *y
+            hip = 30*y
             knee = 30*x if x > 0 else 0 
 
             return angle_to_position(hip),angle_to_position(knee)
         
         else: #if running in simulation, give radian angles
-            hip = (math.pi/6)*y
+            hip = (math.pi/12)*y
             knee = (math.pi/6)*x if x > 0 else 0 
 
             return hip,knee
