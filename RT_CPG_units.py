@@ -17,7 +17,7 @@ class CPG():
         
         #Torque feedback parameters
         self.torqueFeedback = 0
-        self.attenuation = 1/30
+        self.attenuation = 1/10
         self.offset = 0
         self.n = 0
         self.k = 60
@@ -37,6 +37,8 @@ class CPG():
 
         #debug outputs
         self.omegaList = []
+        self.xList = []
+        self.yList = []
 
     def hopfOld(self,t):
         
@@ -70,9 +72,9 @@ class CPG():
         
         return x,y,self.hopfOmega
 
-    def hopf(self,z):
-        x,y = z
-        a,mu,b= 20,1,20
+    def hopf(self):
+        x,y = self.x,self.y
+        a,mu,b= 50,1,20
 
         #angular frequency can be modulated using current position 
 
@@ -92,7 +94,8 @@ class CPG():
                 unit = couple[0]
                 deltaSum +=  (unit.y * np.cos(phase) - unit.x * np.sin(phase))
 
-            return dx, dy + 0.4*deltaSum
+            #return dx, dy + 0.4*deltaSum
+            return dx, dy + deltaSum
 
             
             # deltaSumX,deltaSumY = 0,0
@@ -109,35 +112,40 @@ class CPG():
         else:
             return dx,dy
     
-    def euler(self,t,x,y):
+    def torqueModulation(self):
+  
+        self.offset = self.torqueFeedback * self.attenuation
+
+        self.x += self.offset
+
+
+
+
+    def euler(self,t):
         
         #set new timestamp to calculate next step size
         self.prev = time.time()
 
         #get gradients using the hopf oscillator equations
-        dx,dy = self.hopf([x,y])
+        dx,dy = self.hopf()
 
         #estimate next value using euler method 
-        self.x =  x + t*dx
-        self.y = y + t*dy
-
-        #return new coordinates
-        return self.x,self.y
-
-    def vdp(self,t,z):
-        b,w = 1,math.pi
-        x,y = z
-
-        x = (2/math.sqrt(b))*np.cos(w*t) 
-        y = ((2*w)/math.sqrt(b))*np.sin(w*t) 
-
-        return x,y
+        self.x =  self.x + t*dx
+        self.y = self.y + t*dy
 
     def get_motor_commands(self,start,realWorld = False):
 
-        #use euler method to solve hopf equations     
-        x,y= self.euler(time.time() - self.prev,self.x,self.y)
-              
+        #use euler method to solve hopf equations and update x,y    
+        self.euler(time.time() - self.prev)
+
+        #add an offset to x based on torque - idea is that a high torque means an object has been collided with, so increase step height 
+        self.torqueModulation()
+
+        self.xList.append(self.x)
+        self.yList.append(self.y)
+
+        x,y = self.x,self.y      
+        
         if realWorld: #if running on hardware convert to position
             hip = 30*y
             knee = 30*x if x > 0 else 0 

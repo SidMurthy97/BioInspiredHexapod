@@ -6,6 +6,8 @@ import math
 import numpy as np
 from RT_CPG_units import CPG
 import matplotlib.pyplot as plt
+from tqdm import trange
+
 
 def printJointInfo(bot):
     n = p.getNumJoints(hexapod)
@@ -50,6 +52,11 @@ def ripple():
     cpgUnits[4].coupledCPG = [[cpgUnits[5],math.pi/2],[cpgUnits[1],math.pi]]
     cpgUnits[5].coupledCPG = [[cpgUnits[0],-math.pi]]
 
+def plotData(datas):
+    for series in datas:
+        plt.figure()
+        plt.plot(series)
+        plt.xlabel("index")
 
 #set pybullet terms 
 physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
@@ -58,8 +65,8 @@ p.setGravity(0,0,-10)
 planeId = p.loadURDF("plane.urdf") #load plane
 startPos = [0,0,1]
 startOrientation = p.getQuaternionFromEuler([0,0,0])
-#hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\stationaryHexapod.urdf",startPos, startOrientation,globalScaling=3,useFixedBase=True) #load robot and make it bigger
-hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\pexod.urdf",startPos, startOrientation,globalScaling=3) #load robot and make it bigger
+hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\stationaryHexapod.urdf",startPos, startOrientation,globalScaling=3,useFixedBase=True) #load robot and make it bigger
+#hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\pexod.urdf",startPos, startOrientation,globalScaling=3) #load robot and make it bigger
 p.setRealTimeSimulation(1) #use system clock to step simulaton
 
 
@@ -82,30 +89,55 @@ cpgUnits = []
 transform = [-1,-1,-1,1,1,1]
 
 start = time.time()
-transient = 30
+transient = 10
 tripod()
 
+
+#debug outputs
+torqueList = []
+xtest = []
+ytest = []
+
 #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"ripple_gait.mp4")
-for i in range (5000):
-    while time.time() - start < transient:
-        #allow CPG units to run for transient period 
+
+try:
+    for i in trange(2000):
+        while time.time() - start < transient:
+            #allow CPG units to run for transient period 
+            for j in range(nLegs):
+                hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
+
+        #get positions for all legs 
         for j in range(nLegs):
             hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
+            anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability     
 
-    #get positions for all legs 
-    for j in range(nLegs):
-        hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
-        anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability     
+        p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
+        p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*transform)
+        p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
 
-    p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
-    p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*transform)
-    p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
+        #add a torque perturbation every 500 iterations
+        if i%1000 == 0 and i > 0:
+            cpgUnits[0].torqueFeedback = 10
+            print("purturbation")
+        else:
+            cpgUnits[0].torqueFeedback = abs(p.getJointState(hexapod,hips[0])[-1])
+        
+        torqueList.append(cpgUnits[0].offset)
+        xtest.append(kneePos[0])
+        ytest.append(hipPos[0])
+        #p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
+        time.sleep(1./240.)
+
+    plotData([xtest,ytest,torqueList])
     
-    # while 1:
-    #     current_pos = p.getJointState(hexapod,10)[0]
-    #     if abs(current_pos - kneePos[0]) < tol:
-    #         break
-    p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
-    time.sleep(1./240.)
-    
-p.disconnect()
+    plt.figure()
+    plt.plot(cpgUnits[0].xList,cpgUnits[0].yList)
+    plt.show()
+    p.disconnect()
+
+except KeyboardInterrupt:
+
+    plotData([xtest,ytest,torqueList])
+    p.disconnect()
+
