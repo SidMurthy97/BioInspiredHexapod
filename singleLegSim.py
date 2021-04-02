@@ -138,6 +138,10 @@ try:
 
     p.disconnect()
 
+    plt.figure()
+    plt.plot(cpgUnits[0].x)
+    plt.plot(cpgUnits[1].x)
+    plt.plot(cpgUnits[2].x)
     #live plotting to see the convergence properties     
     x = deque(maxlen=50)
     y = deque(maxlen=50)

@@ -104,6 +104,8 @@ torqueList = []
 xtest = []
 ytest = []
 
+cpg1,cpg2,cpg3 = [],[],[]
+
 #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"ripple_gait.mp4")
 
 try:
@@ -132,6 +134,13 @@ try:
             #debug outputs to check limitcxycle 
             xtest.append(cpgUnits[0].x)
             ytest.append(cpgUnits[0].y)
+
+            cpg1.append(cpgUnits[1].x)
+            cpg2.append(cpgUnits[2].x)
+            cpg3.append(cpgUnits[3].x)
+
+            #debug outputs to check phase 
+
         
         else: #pause until the cpg comes back around to allow the retraction of the leg 
             #print(criticalHip,hipPos[0])
@@ -151,7 +160,8 @@ try:
         
         else:
             for j in range(nLegs):
-                cpgUnits[j].torqueFeedback = abs(p.getJointState(hexapod,hips[j])[-1])
+                #cpgUnits[j].torqueFeedback = abs(p.getJointState(hexapod,hips[j])[-1])
+                cpgUnits[j].torqueFeedback = 0
         
         torqueList.append(cpgUnits[0].offset)
 
@@ -160,17 +170,22 @@ try:
 
     p.disconnect()
 
-    #live plotting to see the convergence properties     
-    x = deque(maxlen=50)
-    y = deque(maxlen=50)
     plt.figure()
-    plt.grid()
-    for j in trange(300,len(xtest)):
-        x.append(xtest[j])
-        y.append(ytest[j])
-        plt.plot(x,y)
-        plt.show(block = False)
-        plt.pause(0.005)
+    plt.plot(xtest)
+    plt.plot(cpg1)
+    plt.plot(cpg2)
+    plt.plot(cpg3)
+    # #live plotting to see the convergence properties     
+    # x = deque(maxlen=50)
+    # y = deque(maxlen=50)
+    # plt.figure()
+    # plt.grid()
+    # for j in trange(300,len(xtest)):
+    #     x.append(xtest[j])
+    #     y.append(ytest[j])
+    #     plt.plot(x,y)
+    #     plt.show(block = False)
+    #     plt.pause(0.005)
     plt.show()
 
 except KeyboardInterrupt:
