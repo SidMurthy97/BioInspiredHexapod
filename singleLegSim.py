@@ -72,6 +72,7 @@ transient = 0
 tripod()
 
 highTorque = False
+hopfResetTime = start
 #debug outputs
 torqueList = []
 xtest = []
@@ -92,22 +93,30 @@ try:
             anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability     
 
         if not highTorque:
+
+            if time.time() - hopfResetTime > 5:
+                cpgUnits[0].hopfA = 20
+
             p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
             p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*transform)
             p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
+            
+            #debug outputs to check limitcxycle 
             xtest.append(cpgUnits[0].x)
             ytest.append(cpgUnits[0].y)
+        
         else:
             #print(criticalHip,hipPos[0])
             if hipPos[0] < criticalHip and hipPos[0] > criticalHip - 0.15 and kneePos[0] < criticalKnee and kneePos[0] > criticalKnee - 0.15:
                 highTorque = False
         
         #add a torque perturbation every 250 iterations
-        if i%250 == 0 and i > 0 and cpgUnits[0].x > 0.1:
-            cpgUnits[0].torqueFeedback = 10
+        if i%150 == 0 and i > 0 and cpgUnits[0].x > 0.1:
+            cpgUnits[0].torqueFeedback = 20
             cpgUnits[0].hopfA = 5    
             print("Perturbation at i = ",i)
             highTorque = True 
+            hopfResetTime = time.time()
             criticalHip = hipPos[0]        
             criticalKnee = kneePos[0]           
             criticalKnee = anklePos[0]            
