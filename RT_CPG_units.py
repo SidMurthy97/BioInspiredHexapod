@@ -19,7 +19,7 @@ class CPG():
         
         #Torque feedback parameters
         self.torqueFeedback = 0
-        self.attenuation = 1/10
+        self.attenuation = 1/50
         self.offset = 0
         self.n = 0
         self.k = 60
@@ -98,18 +98,6 @@ class CPG():
 
             #return dx, dy + 0.4*deltaSum
             return dx, dy + deltaSum
-
-            
-            # deltaSumX,deltaSumY = 0,0
-            # #print(self.coupledCPG)
-            # for couple in self.coupledCPG:
-            #     phase = couple[1]
-            #     unit = couple[0]
-
-            #     deltaSumX = (unit.x + unit.y)/(math.sqrt(unit.x**2 + unit.y**2)) * np.sin(phase)
-            #     deltaSumY = (unit.x + unit.y)/(math.sqrt(unit.x**2 + unit.y**2)) * np.cos(phase)
-            #     #print(deltaSumX,deltaSumY)
-            # return dx - deltaSumX, dy + deltaSumY
             
         else:
             return dx,dy

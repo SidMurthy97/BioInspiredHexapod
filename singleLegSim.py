@@ -53,9 +53,9 @@ torqueList = []
 #printJointInfo(2,hexapod)
 #joint indices 
 
-hips = [0]
-knees = [1]
-ankles = [2]
+hips = [3,0]
+knees = [4,1]
+ankles = [5,2]
 
 nLegs = len(hips)
 
@@ -99,7 +99,7 @@ try:
         #if obstacle has not been detected then do the default task
         if not highTorque:
             
-            if cpgUnits[0].x < 0:
+            if cpgUnits[0].x < 0: #reset to default after torque modulation
                 cpgUnits[0].hopfA = 20
                 ankleFactor = 1
 
@@ -123,8 +123,6 @@ try:
             cpgUnits[0].hopfA = 5    
             highTorque = True 
             perturbation = False #we only want one perturbation 
-
-            hopfResetTime = time.time()
             criticalHip = hipPos[0]        
             criticalKnee = kneePos[0]
             ankleFactor = -1 #make ankle open up to step over the obstacle 
@@ -152,6 +150,7 @@ try:
         plt.show(block = False)
         plt.pause(0.005)
     plt.show()
+
 except KeyboardInterrupt:
 
     plotData([xtest,ytest,torqueList])

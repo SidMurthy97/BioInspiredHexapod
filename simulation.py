@@ -7,7 +7,7 @@ import numpy as np
 from RT_CPG_units import CPG
 import matplotlib.pyplot as plt
 from tqdm import trange
-
+from collections import deque
 
 def printJointInfo(bot):
     n = p.getNumJoints(hexapod)
@@ -65,8 +65,8 @@ p.setGravity(0,0,-10)
 planeId = p.loadURDF("plane.urdf") #load plane
 startPos = [0,0,1]
 startOrientation = p.getQuaternionFromEuler([0,0,0])
-hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\stationaryHexapod.urdf",startPos, startOrientation,globalScaling=3,useFixedBase=True) #load robot and make it bigger
-#hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\pexod.urdf",startPos, startOrientation,globalScaling=3) #load robot and make it bigger
+#hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\stationaryHexapod.urdf",startPos, startOrientation,globalScaling=3,useFixedBase=True) #load robot and make it bigger
+hexapod = p.loadURDF("C:\\Users\\murth\\Documents\\year 5\\FYP\\src\\robots\\pexod.urdf",startPos, startOrientation,globalScaling=3) #load robot and make it bigger
 p.setRealTimeSimulation(1) #use system clock to step simulaton
 
 
@@ -92,6 +92,12 @@ start = time.time()
 transient = 10
 tripod()
 
+highTorque = False
+hopfResetTime = start
+ankleFactor = [1] * nLegs
+cycleCount = 0
+perturbation = True
+torqueTarget = 0 #specify which cpg is being tested
 
 #debug outputs
 torqueList = []
@@ -101,7 +107,7 @@ ytest = []
 #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"ripple_gait.mp4")
 
 try:
-    for i in trange(2000):
+    for i in range(1000):
         while time.time() - start < transient:
             #allow CPG units to run for transient period 
             for j in range(nLegs):
@@ -110,31 +116,62 @@ try:
         #get positions for all legs 
         for j in range(nLegs):
             hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
-            anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability     
+            anklePos[j] = kneePos[j] * ankleFactor[j] #this ensures end effector is perpendicular to ground and allows stability     
 
-        p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
-        p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*transform)
-        p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
+        #if obstacle has not been detected then do the default task
+        if not highTorque:
+            
+            if cpgUnits[torqueTarget].x < 0: #reset to default after torque modulation
+                cpgUnits[torqueTarget].hopfA = 20
+                ankleFactor[torqueTarget] = 1
 
-        #add a torque perturbation every 500 iterations
-        if i%1000 == 0 and i > 0:
-            cpgUnits[0].torqueFeedback = 10
-            print("purturbation")
+            p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
+            p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*transform)
+            p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
+            
+            #debug outputs to check limitcxycle 
+            xtest.append(cpgUnits[0].x)
+            ytest.append(cpgUnits[0].y)
+        
+        else: #pause until the cpg comes back around to allow the retraction of the leg 
+            #print(criticalHip,hipPos[0])
+            if hipPos[0] < criticalHip and hipPos[0] > criticalHip - 0.25 and kneePos[0] < criticalKnee and kneePos[0] > criticalKnee - 0.25:
+                highTorque = False
+        
+        #add a torque perturbation every 250 iterations
+        if i > 600 and cpgUnits[0].x > 0.75 and perturbation == True:
+            cpgUnits[torqueTarget].torqueFeedback = 20
+            cpgUnits[torqueTarget].hopfA = 5    
+            highTorque = True 
+            perturbation = False #we only want one perturbation 
+            criticalHip = hipPos[torqueTarget]        
+            criticalKnee = kneePos[torqueTarget]
+            ankleFactor[torqueTarget] = -1 #make ankle open up to step over the obstacle 
+            print("Perturbation at i = ",i)            
+        
         else:
-            cpgUnits[0].torqueFeedback = abs(p.getJointState(hexapod,hips[0])[-1])
+            for j in range(nLegs):
+                cpgUnits[j].torqueFeedback = abs(p.getJointState(hexapod,hips[j])[-1])
         
         torqueList.append(cpgUnits[0].offset)
-        xtest.append(kneePos[0])
-        ytest.append(hipPos[0])
-        #p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
+
+        p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
         time.sleep(1./240.)
 
-    plotData([xtest,ytest,torqueList])
-    
-    plt.figure()
-    plt.plot(cpgUnits[0].xList,cpgUnits[0].yList)
-    plt.show()
     p.disconnect()
+
+    #live plotting to see the convergence properties     
+    x = deque(maxlen=50)
+    y = deque(maxlen=50)
+    plt.figure()
+    plt.grid()
+    for j in trange(300,len(xtest)):
+        x.append(xtest[j])
+        y.append(ytest[j])
+        plt.plot(x,y)
+        plt.show(block = False)
+        plt.pause(0.005)
+    plt.show()
 
 except KeyboardInterrupt:
 
