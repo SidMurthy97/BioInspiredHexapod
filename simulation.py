@@ -90,12 +90,12 @@ transform = [-1,-1,-1,1,1,1]
 
 start = time.time()
 transient = 10
-#tripod()
-metachronal()
+tripod()
+#metachronal()
 highTorque = False
 ankleFactor = [1] * nLegs
 perturbation = True
-torqueTarget = 0 #specify which cpg is being tested
+torqueTarget = 5 #specify which cpg is being tested
 
 #debug outputs
 torqueList = []
@@ -141,7 +141,8 @@ try:
 
         
         else: #pause until the cpg comes back around to allow the retraction of the leg 
-            if hipPos[0] < criticalHip and hipPos[0] > criticalHip - 0.25 and kneePos[0] < criticalKnee and kneePos[0] > criticalKnee - 0.25:
+            #print(criticalHip,criticalKnee)
+            if hipPos[torqueTarget] < criticalHip and hipPos[torqueTarget] > criticalHip - 0.25 and kneePos[torqueTarget] < criticalKnee and kneePos[torqueTarget] > criticalKnee - 0.25:
                 highTorque = False
         
         #add a torque perturbation every 250 iterations
