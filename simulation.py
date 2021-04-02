@@ -92,6 +92,7 @@ start = time.time()
 transient = 10
 tripod()
 #metachronal()
+
 highTorque = False
 ankleFactor = [1] * nLegs
 perturbation = True
@@ -107,7 +108,7 @@ cpg1,cpg2,cpg3 = [],[],[]
 #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"ripple_gait.mp4")
 
 try:
-    for i in range(10000):
+    for i in range(1000):
         while time.time() - start < transient:
             #allow CPG units to run for transient period 
             for j in range(nLegs):
