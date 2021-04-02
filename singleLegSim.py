@@ -73,6 +73,10 @@ tripod()
 
 highTorque = False
 hopfResetTime = start
+ankleFactor = 1
+cycleCount = 0
+perturbation = True
+
 #debug outputs
 torqueList = []
 xtest = []
@@ -90,12 +94,14 @@ try:
         #get positions for all legs 
         for j in range(nLegs):
             hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
-            anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability     
+            anklePos[j] = kneePos[j] * ankleFactor #this ensures end effector is perpendicular to ground and allows stability     
 
+        #if obstacle has not been detected then do the default task
         if not highTorque:
-
-            if time.time() - hopfResetTime > 5:
+            
+            if cpgUnits[0].x < 0:
                 cpgUnits[0].hopfA = 20
+                ankleFactor = 1
 
             p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
             p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*transform)
@@ -105,21 +111,24 @@ try:
             xtest.append(cpgUnits[0].x)
             ytest.append(cpgUnits[0].y)
         
-        else:
+        else: #pause until the cpg comes back around to allow the retraction of the leg 
             #print(criticalHip,hipPos[0])
-            if hipPos[0] < criticalHip and hipPos[0] > criticalHip - 0.15 and kneePos[0] < criticalKnee and kneePos[0] > criticalKnee - 0.15:
+            if hipPos[0] < criticalHip and hipPos[0] > criticalHip - 0.25 and kneePos[0] < criticalKnee and kneePos[0] > criticalKnee - 0.25:
                 highTorque = False
         
         #add a torque perturbation every 250 iterations
-        if i%150 == 0 and i > 0 and cpgUnits[0].x > 0.1:
+        if i > 600 and cpgUnits[0].x > 0.75 and perturbation == True:
+            
             cpgUnits[0].torqueFeedback = 20
             cpgUnits[0].hopfA = 5    
-            print("Perturbation at i = ",i)
             highTorque = True 
+            perturbation = False #we only want one perturbation 
+
             hopfResetTime = time.time()
             criticalHip = hipPos[0]        
-            criticalKnee = kneePos[0]           
-            criticalKnee = anklePos[0]            
+            criticalKnee = kneePos[0]
+            ankleFactor = -1 #make ankle open up to step over the obstacle 
+            print("Perturbation at i = ",i)            
         
         else:
             cpgUnits[0].torqueFeedback = abs(p.getJointState(hexapod,hips[0])[-1])
@@ -136,13 +145,13 @@ try:
     y = deque(maxlen=50)
     plt.figure()
     plt.grid()
-    for j in trange(len(xtest)):
+    for j in trange(300,len(xtest)):
         x.append(xtest[j])
         y.append(ytest[j])
         plt.plot(x,y)
         plt.show(block = False)
         plt.pause(0.005)
-
+    plt.show()
 except KeyboardInterrupt:
 
     plotData([xtest,ytest,torqueList])
