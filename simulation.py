@@ -97,7 +97,7 @@ hopfResetTime = start
 ankleFactor = [1] * nLegs
 cycleCount = 0
 perturbation = True
-torqueTarget = 0 #specify which cpg is being tested
+torqueTarget = 2 #specify which cpg is being tested
 
 #debug outputs
 torqueList = []
@@ -149,8 +149,8 @@ try:
         
         #add a torque perturbation every 250 iterations
         if i > 600 and cpgUnits[0].x > 0.75 and perturbation == True:
-            cpgUnits[torqueTarget].torqueFeedback = 20
-            cpgUnits[torqueTarget].hopfA = 5    
+            cpgUnits[torqueTarget].torqueFeedback = 100
+            cpgUnits[torqueTarget].hopfA = 1   
             highTorque = True 
             perturbation = False #we only want one perturbation 
             criticalHip = hipPos[torqueTarget]        
@@ -175,17 +175,18 @@ try:
     plt.plot(cpg1)
     plt.plot(cpg2)
     plt.plot(cpg3)
-    # #live plotting to see the convergence properties     
-    # x = deque(maxlen=50)
-    # y = deque(maxlen=50)
-    # plt.figure()
-    # plt.grid()
-    # for j in trange(300,len(xtest)):
-    #     x.append(xtest[j])
-    #     y.append(ytest[j])
-    #     plt.plot(x,y)
-    #     plt.show(block = False)
-    #     plt.pause(0.005)
+    plt.show()
+    #live plotting to see the convergence properties     
+    x = deque(maxlen=50)
+    y = deque(maxlen=50)
+    plt.figure()
+    plt.grid()
+    for j in trange(300,len(xtest)):
+        x.append(xtest[j])
+        y.append(ytest[j])
+        plt.plot(x,y)
+        plt.show(block = False)
+        plt.pause(0.005)
     plt.show()
 
 except KeyboardInterrupt:
