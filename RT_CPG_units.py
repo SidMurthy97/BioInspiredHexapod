@@ -74,7 +74,7 @@ class CPG():
 
     def hopf(self):
         x,y = self.x,self.y
-        a,mu,b= 50,1,20
+        a,mu,b= 20,1,20
 
         #angular frequency can be modulated using current position 
 

@@ -6,8 +6,10 @@ import math
 import numpy as np
 from RT_CPG_units import CPG
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import numpy as np
 from tqdm import trange
+from collections import deque
 
 def tripod():
     #initialise CPGs
@@ -17,10 +19,12 @@ def tripod():
     #tripod gait allows for bidirectional coupling 
     ncpgs = nLegs
     phase = math.pi
-    for i in range(ncpgs):
-        prevUnit = cpgUnits[(i-1)%ncpgs]
-        nextUnit = cpgUnits[(i+1)%ncpgs]
-        cpgUnits[i].coupledCPG = [[prevUnit,phase],[nextUnit,phase]]
+
+    if nLegs > 1:
+        for i in range(ncpgs):
+            prevUnit = cpgUnits[(i-1)%ncpgs]
+            nextUnit = cpgUnits[(i+1)%ncpgs]
+            cpgUnits[i].coupledCPG = [[prevUnit,phase],[nextUnit,phase]]
 
 def plotData(datas):
     for series in datas:
@@ -49,9 +53,9 @@ torqueList = []
 #printJointInfo(2,hexapod)
 #joint indices 
 
-hips = [0,3]
-knees = [1,4]
-ankles = [2,5]
+hips = [0]
+knees = [1]
+ankles = [2]
 
 nLegs = len(hips)
 
@@ -61,10 +65,10 @@ anklePos = np.zeros(nLegs)
 
 cpgUnits = []
 #matrix transform to reverse one side of the robot  
-transform = [-1,-1]
+transform = [-1]
 
 start = time.time()
-transient = 10
+transient = 0
 tripod()
 
 #debug outputs
@@ -75,7 +79,7 @@ ytest = []
 #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"ripple_gait.mp4")
 
 try:
-    for i in trange(2000):
+    for i in trange(1000):
         while time.time() - start < transient:
             #allow CPG units to run for transient period 
             for j in range(nLegs):
@@ -91,24 +95,31 @@ try:
         p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
 
         #add a torque perturbation every 500 iterations
-        if i%1000 == 0 and i > 0:
-            cpgUnits[0].torqueFeedback = 10
+        if i%300 == 0 and i > 0 and cpgUnits[0].x > 0:
+            cpgUnits[0].torqueFeedback = 5
             print("purturbation")
         else:
             cpgUnits[0].torqueFeedback = abs(p.getJointState(hexapod,hips[0])[-1])
         
         torqueList.append(cpgUnits[0].offset)
-        xtest.append(kneePos[0])
-        ytest.append(hipPos[0])
+        xtest.append(cpgUnits[0].x)
+        ytest.append(cpgUnits[0].y)
         #p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
         time.sleep(1./240.)
 
-    # plotData([xtest,ytest,torqueList])
-    
-    plt.figure()
-    plt.plot(cpgUnits[0].xList,cpgUnits[0].yList)
-    plt.show()
     p.disconnect()
+
+    #live plotting to see the convergence properties     
+    x = deque(maxlen=50)
+    y = deque(maxlen=50)
+    plt.figure()
+
+    for j in trange(len(xtest)):
+        x.append(xtest[j])
+        y.append(ytest[j])
+        plt.plot(x,y)
+        plt.show(block = False)
+        plt.pause(0.005)
 
 except KeyboardInterrupt:
 
