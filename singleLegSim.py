@@ -71,6 +71,7 @@ start = time.time()
 transient = 0
 tripod()
 
+highTorque = False
 #debug outputs
 torqueList = []
 xtest = []
@@ -79,7 +80,7 @@ ytest = []
 #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"ripple_gait.mp4")
 
 try:
-    for i in trange(1000):
+    for i in range(1000):
         while time.time() - start < transient:
             #allow CPG units to run for transient period 
             for j in range(nLegs):
@@ -90,20 +91,32 @@ try:
             hipPos[j],kneePos[j] = cpgUnits[j].get_motor_commands(start)
             anklePos[j] = kneePos[j] #this ensures end effector is perpendicular to ground and allows stability     
 
-        p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
-        p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*transform)
-        p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
-
-        #add a torque perturbation every 500 iterations
-        if i%300 == 0 and i > 0 and cpgUnits[0].x > 0:
-            cpgUnits[0].torqueFeedback = 5
-            print("purturbation")
+        if not highTorque:
+            p.setJointMotorControlArray(hexapod,knees,p.POSITION_CONTROL,kneePos)
+            p.setJointMotorControlArray(hexapod,hips,p.POSITION_CONTROL,hipPos*transform)
+            p.setJointMotorControlArray(hexapod,ankles,p.POSITION_CONTROL,anklePos)
+            xtest.append(cpgUnits[0].x)
+            ytest.append(cpgUnits[0].y)
+        else:
+            #print(criticalHip,hipPos[0])
+            if hipPos[0] < criticalHip and hipPos[0] > criticalHip - 0.15 and kneePos[0] < criticalKnee and kneePos[0] > criticalKnee - 0.15:
+                highTorque = False
+        
+        #add a torque perturbation every 250 iterations
+        if i%250 == 0 and i > 0 and cpgUnits[0].x > 0.1:
+            cpgUnits[0].torqueFeedback = 10
+            cpgUnits[0].hopfA = 5    
+            print("Perturbation at i = ",i)
+            highTorque = True 
+            criticalHip = hipPos[0]        
+            criticalKnee = kneePos[0]           
+            criticalKnee = anklePos[0]            
+        
         else:
             cpgUnits[0].torqueFeedback = abs(p.getJointState(hexapod,hips[0])[-1])
         
         torqueList.append(cpgUnits[0].offset)
-        xtest.append(cpgUnits[0].x)
-        ytest.append(cpgUnits[0].y)
+
         #p.resetDebugVisualizerCamera(5, 50,-35.0,p.getBasePositionAndOrientation(hexapod)[0])
         time.sleep(1./240.)
 
@@ -113,7 +126,7 @@ try:
     x = deque(maxlen=50)
     y = deque(maxlen=50)
     plt.figure()
-
+    plt.grid()
     for j in trange(len(xtest)):
         x.append(xtest[j])
         y.append(ytest[j])

@@ -11,7 +11,9 @@ class CPG():
     def __init__(self,prev,beta):
         #hopf parameters
         self.hopfMu = 1
+        self.hopfA = 20
 
+        #stance and swing frequency modulation
         self.stanceF = ((1 - beta)/beta)*math.pi
         self.swingF = (1)*math.pi
         
@@ -74,7 +76,7 @@ class CPG():
 
     def hopf(self):
         x,y = self.x,self.y
-        a,mu,b= 20,1,20
+        a,mu,b= self.hopfA,self.hopfMu,20
 
         #angular frequency can be modulated using current position 
 
