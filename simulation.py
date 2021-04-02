@@ -90,14 +90,12 @@ transform = [-1,-1,-1,1,1,1]
 
 start = time.time()
 transient = 10
-tripod()
-
+#tripod()
+metachronal()
 highTorque = False
-hopfResetTime = start
 ankleFactor = [1] * nLegs
-cycleCount = 0
 perturbation = True
-torqueTarget = 2 #specify which cpg is being tested
+torqueTarget = 0 #specify which cpg is being tested
 
 #debug outputs
 torqueList = []
@@ -109,7 +107,7 @@ cpg1,cpg2,cpg3 = [],[],[]
 #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4,"ripple_gait.mp4")
 
 try:
-    for i in range(1000):
+    for i in range(10000):
         while time.time() - start < transient:
             #allow CPG units to run for transient period 
             for j in range(nLegs):
@@ -143,13 +141,12 @@ try:
 
         
         else: #pause until the cpg comes back around to allow the retraction of the leg 
-            #print(criticalHip,hipPos[0])
             if hipPos[0] < criticalHip and hipPos[0] > criticalHip - 0.25 and kneePos[0] < criticalKnee and kneePos[0] > criticalKnee - 0.25:
                 highTorque = False
         
         #add a torque perturbation every 250 iterations
-        if i > 600 and cpgUnits[0].x > 0.75 and perturbation == True:
-            cpgUnits[torqueTarget].torqueFeedback = 100
+        if i > 600 and cpgUnits[torqueTarget].x > 0.75 and perturbation == True:
+            cpgUnits[torqueTarget].torqueFeedback = 10
             cpgUnits[torqueTarget].hopfA = 1   
             highTorque = True 
             perturbation = False #we only want one perturbation 
@@ -177,17 +174,17 @@ try:
     plt.plot(cpg3)
     plt.show()
     #live plotting to see the convergence properties     
-    x = deque(maxlen=50)
-    y = deque(maxlen=50)
-    plt.figure()
-    plt.grid()
-    for j in trange(300,len(xtest)):
-        x.append(xtest[j])
-        y.append(ytest[j])
-        plt.plot(x,y)
-        plt.show(block = False)
-        plt.pause(0.005)
-    plt.show()
+    # x = deque(maxlen=50)
+    # y = deque(maxlen=50)
+    # plt.figure()
+    # plt.grid()
+    # for j in trange(300,len(xtest)):
+    #     x.append(xtest[j])
+    #     y.append(ytest[j])
+    #     plt.plot(x,y)
+    #     plt.show(block = False)
+    #     plt.pause(0.005)
+    # plt.show()
 
 except KeyboardInterrupt:
 

@@ -105,11 +105,7 @@ class CPG():
     def torqueModulation(self):
   
         self.offset = self.torqueFeedback * self.attenuation
-
         self.x += self.offset
-
-
-
 
     def euler(self,t):
         
@@ -144,7 +140,7 @@ class CPG():
         
         else: #if running in simulation, give radian angles
             hip = (math.pi/12)*y
-            knee = (math.pi/6)*x if x > 0 else 0 
+            knee = (math.pi/6)*x if x > 0 else 0
 
             return hip,knee
 
